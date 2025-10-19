@@ -178,16 +178,16 @@ func (p *InterProvider) CreateQRCodeStatic(ctx context.Context, req *providers.Q
 	}
 
 	var qrResp struct {
-		TxId          string `json:"txid"`
+		TxID          string `json:"txid"`
 		PixCopiaECola string `json:"pixCopiaECola"`
 	}
 
 	if err := json.Unmarshal(resp, &qrResp); err != nil {
-		return nil, providers.NewProviderError("PARSE_ERROR", "Erro ao processar resposta", err)
+		return nil, err
 	}
 
 	return &providers.QRCodeResponse{
-		QRCodeID: qrResp.TxId,
+		QRCodeID: qrResp.TxID,
 		QRCode:   qrResp.PixCopiaECola,
 	}, nil
 }
@@ -215,16 +215,16 @@ func (p *InterProvider) CreateQRCodeDynamic(ctx context.Context, req *providers.
 	}
 
 	var qrResp struct {
-		TxId          string `json:"txid"`
+		TxID          string `json:"txid"`
 		PixCopiaECola string `json:"pixCopiaECola"`
 	}
 
 	if err := json.Unmarshal(resp, &qrResp); err != nil {
-		return nil, providers.NewProviderError("PARSE_ERROR", "Erro ao processar resposta", err)
+		return nil, err
 	}
 
 	return &providers.QRCodeResponse{
-		QRCodeID: qrResp.TxId,
+		QRCodeID: qrResp.TxID,
 		QRCode:   qrResp.PixCopiaECola,
 	}, nil
 }
@@ -243,7 +243,7 @@ func (p *InterProvider) GetQRCode(ctx context.Context, req *providers.GetQRCodeR
 	}
 
 	var qrResp struct {
-		TxId          string `json:"txid"`
+		TxID          string `json:"txid"`
 		PixCopiaECola string `json:"pixCopiaECola"`
 		Status        string `json:"status"`
 	}
@@ -253,7 +253,7 @@ func (p *InterProvider) GetQRCode(ctx context.Context, req *providers.GetQRCodeR
 	}
 
 	return &providers.QRCodeResponse{
-		QRCodeID: qrResp.TxId,
+		QRCodeID: qrResp.TxID,
 		QRCode:   qrResp.PixCopiaECola,
 		Status:   qrResp.Status,
 	}, nil
