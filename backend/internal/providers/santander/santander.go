@@ -232,7 +232,7 @@ func (p *SantanderProvider) GetQRCode(ctx context.Context, req *providers.GetQRC
 		QRCodeID:    qrResp.QRCodeId,
 		QRCode:      qrResp.QRCode,
 		QRCodeImage: qrResp.Image,
-		Status:      mapStatus(qrResp.Status),
+		Status:      qrResp.Status,
 	}, nil
 }
 

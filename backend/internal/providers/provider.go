@@ -1,7 +1,14 @@
 package providers
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
+	"fmt"
+	"io"
+	"net/http"
+	"net/url"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -17,7 +24,7 @@ type PixProvider interface {
 	GetName() string
 	
 	// Initialize inicializa o provider com as configurações
-	Initialize(config domain.ProviderConfig) error
+	Initialize(config ProviderConfig) error
 	
 	// Authenticate realiza autenticação e obtém token de acesso
 	Authenticate(ctx context.Context, credentials ProviderCredentials) (*AuthToken, error)
@@ -29,10 +36,10 @@ type PixProvider interface {
 	CreateTransfer(ctx context.Context, req *TransferRequest) (*TransferResponse, error)
 	
 	// GetTransfer consulta uma transferência PIX
-	GetTransfer(ctx context.Context, txID string) (*TransferResponse, error)
+	GetTransfer(ctx context.Context, req *GetTransferRequest) (*TransferResponse, error)
 	
 	// CancelTransfer cancela uma transferência PIX (se suportado)
-	CancelTransfer(ctx context.Context, txID string) error
+	CancelTransfer(ctx context.Context, req *CancelTransferRequest) error
 	
 	// CreateQRCodeStatic cria um QR Code estático
 	CreateQRCodeStatic(ctx context.Context, req *QRCodeRequest) (*QRCodeResponse, error)
@@ -41,16 +48,26 @@ type PixProvider interface {
 	CreateQRCodeDynamic(ctx context.Context, req *QRCodeRequest) (*QRCodeResponse, error)
 	
 	// GetQRCode consulta informações de um QR Code
-	GetQRCode(ctx context.Context, qrCodeID string) (*QRCodeResponse, error)
+	GetQRCode(ctx context.Context, req *GetQRCodeRequest) (*QRCodeResponse, error)
 	
 	// ValidatePixKey valida se uma chave PIX existe e retorna informações
-	ValidatePixKey(ctx context.Context, pixKey string, pixKeyType domain.PixKeyType) (*PixKeyInfo, error)
+	ValidatePixKey(ctx context.Context, req *ValidatePixKeyRequest) (*ValidatePixKeyResponse, error)
 	
 	// HealthCheck verifica se o provider está saudável
 	HealthCheck(ctx context.Context) error
 	
 	// GetSupportedMethods retorna os métodos suportados pelo provider
 	GetSupportedMethods() []string
+}
+
+// ProviderConfig representa a configuração de um provider
+type ProviderConfig struct {
+	BaseURL      string
+	AuthURL      string
+	SandboxURL   string
+	Timeout      int
+	MaxRetries   int
+	RequiresMTLS bool
 }
 
 // ProviderCredentials representa as credenciais de autenticação
@@ -105,6 +122,52 @@ type TransferRequest struct {
 	
 	// Metadata adicional
 	Metadata map[string]interface{}
+	
+	// Auth token
+	AuthToken string
+	ClientID  string
+}
+
+// GetTransferRequest representa uma requisição de consulta de transferência
+type GetTransferRequest struct {
+	ProviderTxID string
+	AuthToken    string
+	ClientID     string
+}
+
+// CancelTransferRequest representa uma requisição de cancelamento
+type CancelTransferRequest struct {
+	ProviderTxID string
+	AuthToken    string
+	ClientID     string
+	Reason       string
+}
+
+// GetQRCodeRequest representa uma requisição de consulta de QR Code
+type GetQRCodeRequest struct {
+	QRCodeID  string
+	AuthToken string
+	ClientID  string
+}
+
+// ValidatePixKeyRequest representa uma requisição de validação de chave PIX
+type ValidatePixKeyRequest struct {
+	PixKey     string
+	PixKeyType domain.PixKeyType
+	AuthToken  string
+	ClientID   string
+}
+
+// ValidatePixKeyResponse representa a resposta de validação de chave PIX
+type ValidatePixKeyResponse struct {
+	Valid       bool
+	PixKey      string
+	PixKeyType  domain.PixKeyType
+	Name        string
+	Document    string
+	Bank        string
+	ISPB        string
+	AccountType string
 }
 
 // TransferResponse representa a resposta de uma transferência PIX
@@ -152,11 +215,14 @@ type QRCodeRequest struct {
 	Description      string
 	PayeeName        string
 	PayeeDocument    string
+	PixKey           string
 	PayeePixKey      string
 	PayeePixKeyType  domain.PixKeyType
 	ExpiresIn        int // Segundos (para QR Code dinâmico)
 	AllowChange      bool // Permite alterar valor
 	Metadata         map[string]interface{}
+	AuthToken        string
+	ClientID         string
 }
 
 // QRCodeResponse representa a resposta de criação/consulta de QR Code
@@ -256,3 +322,178 @@ func (r *ProviderManager) GetHealthyProvider(
 	// TODO: Implementar lógica de seleção de provider baseada em saúde
 	return nil, nil
 }
+
+// HTTPClient é um cliente HTTP para comunicação com providers
+type HTTPClient struct {
+	client      *http.Client
+	timeout     time.Duration
+	requireMTLS bool
+}
+
+// NewHTTPClient cria um novo cliente HTTP
+func NewHTTPClient(timeout int, requireMTLS bool) HTTPClient {
+	return HTTPClient{
+		client: &http.Client{
+			Timeout: time.Duration(timeout) * time.Second,
+		},
+		timeout:     time.Duration(timeout) * time.Second,
+		requireMTLS: requireMTLS,
+	}
+}
+
+// Post faz uma requisição POST
+func (c *HTTPClient) Post(ctx context.Context, url string, payload interface{}, headers map[string]string) ([]byte, error) {
+	jsonData, err := json.Marshal(payload)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBuffer(jsonData))
+	if err != nil {
+		return nil, err
+	}
+
+	for key, value := range headers {
+		req.Header.Set(key, value)
+	}
+
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	if resp.StatusCode >= 400 {
+		return nil, fmt.Errorf("HTTP %d: %s", resp.StatusCode, string(body))
+	}
+
+	return body, nil
+}
+
+// Get faz uma requisição GET
+func (c *HTTPClient) Get(ctx context.Context, url string, headers map[string]string) ([]byte, error) {
+	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	for key, value := range headers {
+		req.Header.Set(key, value)
+	}
+
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	if resp.StatusCode >= 400 {
+		return nil, fmt.Errorf("HTTP %d: %s", resp.StatusCode, string(body))
+	}
+
+	return body, nil
+}
+
+// PostForm faz uma requisição POST com form data
+func (c *HTTPClient) PostForm(ctx context.Context, urlStr string, data map[string]string, headers map[string]string) ([]byte, error) {
+	form := url.Values{}
+	for key, value := range data {
+		form.Add(key, value)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, "POST", urlStr, strings.NewReader(form.Encode()))
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	for key, value := range headers {
+		req.Header.Set(key, value)
+	}
+
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	if resp.StatusCode >= 400 {
+		return nil, fmt.Errorf("HTTP %d: %s", resp.StatusCode, string(body))
+	}
+
+	return body, nil
+}
+
+// PostFormWithBasicAuth faz uma requisição POST com form data e Basic Auth
+func (c *HTTPClient) PostFormWithBasicAuth(ctx context.Context, urlStr string, data map[string]string, headers map[string]string, username, password string) ([]byte, error) {
+	form := url.Values{}
+	for key, value := range data {
+		form.Add(key, value)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, "POST", urlStr, strings.NewReader(form.Encode()))
+	if err != nil {
+		return nil, err
+	}
+
+	req.SetBasicAuth(username, password)
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	for key, value := range headers {
+		req.Header.Set(key, value)
+	}
+
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	if resp.StatusCode >= 400 {
+		return nil, fmt.Errorf("HTTP %d: %s", resp.StatusCode, string(body))
+	}
+
+	return body, nil
+}
+
+// NewProviderError cria um novo erro de provider
+func NewProviderError(code, message string, err error) error {
+	if err != nil {
+		message = fmt.Sprintf("%s: %v", message, err)
+	}
+	return &ProviderError{
+		Code:    code,
+		Message: message,
+	}
+}
+
+// TransactionStatus representa o status de uma transação
+type TransactionStatus = domain.TransactionStatus
+
+// Constantes de status
+const (
+	TransactionStatusPending    = domain.TransactionStatusPending
+	TransactionStatusProcessing = domain.TransactionStatusProcessing
+	TransactionStatusCompleted  = domain.TransactionStatusCompleted
+	TransactionStatusFailed     = domain.TransactionStatusFailed
+	TransactionStatusCancelled  = domain.TransactionStatusCancelled
+)

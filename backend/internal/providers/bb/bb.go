@@ -246,7 +246,7 @@ func (p *BBProvider) GetQRCode(ctx context.Context, req *providers.GetQRCodeRequ
 		QRCodeID:    bbResp.TxId,
 		QRCode:      bbResp.QRCode,
 		QRCodeImage: bbResp.ImagemQRCode,
-		Status:      mapStatus(bbResp.Status),
+		Status:      bbResp.Status,
 	}, nil
 }
 

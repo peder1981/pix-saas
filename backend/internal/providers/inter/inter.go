@@ -255,7 +255,7 @@ func (p *InterProvider) GetQRCode(ctx context.Context, req *providers.GetQRCodeR
 	return &providers.QRCodeResponse{
 		QRCodeID: qrResp.TxId,
 		QRCode:   qrResp.PixCopiaECola,
-		Status:   mapStatus(qrResp.Status),
+		Status:   qrResp.Status,
 	}, nil
 }
 
