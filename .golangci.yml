@@ -1,24 +1,37 @@
 linters:
-  disable:
-    - govet          # Desabilitado: fieldalignment (50+ structs)
-    - gocritic       # Desabilitado: hugeParam (5+ funções)
-    - revive         # Desabilitado: exported stuttering (3 tipos)
+  disable-all: true
   enable:
-    - errcheck       # Mantido: error checking é crítico
-    - staticcheck    # Mantido: análise estática importante
-    - unused         # Mantido: código não usado
-    - gosimple       # Mantido: simplificações úteis
-    - ineffassign    # Mantido: assignments ineficientes
+    - errcheck       # Error checking é crítico
+    - staticcheck    # Análise estática importante
+    - unused         # Código não usado
+    - gosimple       # Simplificações úteis
+    - ineffassign    # Assignments ineficientes
+
+linters-settings:
+  govet:
+    disable:
+      - fieldalignment  # Desabilita especificamente fieldalignment
+  gocritic:
+    disabled-checks:
+      - hugeParam      # Desabilita especificamente hugeParam
+  revive:
+    rules:
+      - name: exported
+        disabled: true  # Desabilita regra de stuttering
 
 run:
   timeout: 5m
+  skip-dirs:
+    - vendor
+    - node_modules
 
 issues:
   max-issues-per-linter: 0
   max-same-issues: 0
+  exclude-use-default: false
 
-# Nota: Linters desabilitados temporariamente para otimizações futuras
+# Nota: Linters de otimização desabilitados temporariamente
 # TODO: Re-habilitar em PR separado:
-# - govet: Reordenar structs para alignment
-# - gocritic: Passar structs grandes por ponteiro
-# - revive: Renomear tipos (InterProvider -> Provider)
+# - govet fieldalignment: Reordenar structs para alignment
+# - gocritic hugeParam: Passar structs grandes por ponteiro
+# - revive exported: Renomear tipos (InterProvider -> Provider)
