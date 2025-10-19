@@ -442,6 +442,14 @@ A plataforma oferece:
 
 ---
 
+## 👨‍💻 Autor
+
+**Peder Munksgaard**  
+JMPM Tecnologia  
+Email: peder@jmpm.com.br
+
+---
+
 **Desenvolvido com ❤️ para o ecossistema financeiro brasileiro**
 
 *Última atualização: 19 de Outubro de 2025*

@@ -1,5 +1,12 @@
 # PIX SaaS Platform
 
+[![Tests](https://github.com/YOUR_USERNAME/pix-saas/actions/workflows/tests.yml/badge.svg)](https://github.com/YOUR_USERNAME/pix-saas/actions/workflows/tests.yml)
+[![Docker Build](https://github.com/YOUR_USERNAME/pix-saas/actions/workflows/docker.yml/badge.svg)](https://github.com/YOUR_USERNAME/pix-saas/actions/workflows/docker.yml)
+[![CodeQL](https://github.com/YOUR_USERNAME/pix-saas/actions/workflows/codeql.yml/badge.svg)](https://github.com/YOUR_USERNAME/pix-saas/actions/workflows/codeql.yml)
+[![Go Report Card](https://goreportcard.com/badge/github.com/YOUR_USERNAME/pix-saas)](https://goreportcard.com/report/github.com/YOUR_USERNAME/pix-saas)
+[![codecov](https://codecov.io/gh/YOUR_USERNAME/pix-saas/branch/main/graph/badge.svg)](https://codecov.io/gh/YOUR_USERNAME/pix-saas)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 ## 🚀 Visão Geral
 
 Plataforma SaaS robusta, escalável e segura para pagamentos via PIX, totalmente plug and play, compatível com múltiplas instituições financeiras brasileiras.
@@ -216,13 +223,19 @@ kubectl apply -f k8s/
 
 ## 📄 Licença
 
-Proprietary - Todos os direitos reservados
+MIT License - Copyright (c) 2025 Peder Munksgaard (JMPM Tecnologia)
 
 ## 📞 Suporte
 
 - Email: suporte@pixsaas.com.br
 - Documentação: https://docs.pixsaas.com.br
 - Status: https://status.pixsaas.com.br
+
+## 👨‍💻 Autor
+
+**Peder Munksgaard**  
+JMPM Tecnologia  
+Email: peder@jmpm.com.br
 
 ---
 

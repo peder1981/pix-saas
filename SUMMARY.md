@@ -307,7 +307,13 @@ Este é um projeto proprietário, mas aceita contribuições:
 
 ## 📄 Licença
 
-Proprietary - Todos os direitos reservados
+MIT License - Copyright (c) 2025 Peder Munksgaard (JMPM Tecnologia)
+
+## 👨‍💻 Autor
+
+**Peder Munksgaard**  
+JMPM Tecnologia  
+Email: peder@jmpm.com.br
 
 ---
 
