@@ -31,7 +31,23 @@ O Trivy estava tentando escanear uma imagem usando a tag `${{ github.sha }}`, ma
 
 ## ✅ Solução Implementada
 
-### 1. Adicionar `load: true` ao Build
+### 1. Adicionar Permissões de Security
+
+```yaml
+permissions:
+  contents: read
+  packages: write
+  security-events: write  # ✅ Necessário para upload SARIF
+```
+
+**Por quê**: 
+- GitHub Security requer `security-events: write`
+- Permite upload de resultados SARIF
+- Sem isso, o upload falha com "Resource not accessible by integration"
+
+---
+
+### 2. Adicionar `load: true` ao Build
 
 ```yaml
 - name: Build and push API image
@@ -55,7 +71,7 @@ O Trivy estava tentando escanear uma imagem usando a tag `${{ github.sha }}`, ma
 
 ---
 
-### 2. Usar Tag Correta do Metadata
+### 3. Usar Tag Correta do Metadata
 
 ```yaml
 - name: Run Trivy vulnerability scanner
@@ -79,6 +95,11 @@ O Trivy estava tentando escanear uma imagem usando a tag `${{ github.sha }}`, ma
 ### Antes ❌
 
 ```yaml
+permissions:
+  contents: read
+  packages: write
+  # ❌ Faltando security-events: write
+
 - name: Build and push API image
   uses: docker/build-push-action@v5
   with:
@@ -99,16 +120,23 @@ O Trivy estava tentando escanear uma imagem usando a tag `${{ github.sha }}`, ma
 ```
 
 **Problemas**:
+- ❌ Sem permissão security-events
 - ❌ Imagem não mantida localmente
 - ❌ Tag não corresponde às geradas
 - ❌ Trivy tenta puxar imagem que não existe
 - ❌ Workflow falha completamente
+- ❌ Upload SARIF falha
 
 ---
 
 ### Depois ✅
 
 ```yaml
+permissions:
+  contents: read
+  packages: write
+  security-events: write  # ✅ Permissão adicionada
+
 - name: Build and push API image
   id: build-api  # ✅ ID para referência
   uses: docker/build-push-action@v5
@@ -132,9 +160,11 @@ O Trivy estava tentando escanear uma imagem usando a tag `${{ github.sha }}`, ma
 ```
 
 **Melhorias**:
+- ✅ Permissão security-events configurada
 - ✅ Imagem disponível localmente
 - ✅ Tag correta do metadata
 - ✅ Trivy escaneia imagem local
+- ✅ Upload SARIF funciona
 - ✅ Workflow continua mesmo com falhas
 
 ---
@@ -289,6 +319,7 @@ Resultados aparecem em:
 
 ## ✅ Checklist de Correções
 
+- [x] Adicionar `security-events: write` às permissões
 - [x] Adicionar `id: build-api` ao build step
 - [x] Adicionar `load: true` para manter imagem local
 - [x] Usar `fromJSON(...).tags[0]` para tag correta
