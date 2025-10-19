@@ -228,7 +228,11 @@ func (p *ItauProvider) CreateTransfer(ctx context.Context, req *providers.Transf
 				Mensagem string `json:"mensagem"`
 			} `json:"detalhes"`
 		}
-		json.Unmarshal(body, &errorResp)
+		if err := json.Unmarshal(body, &errorResp); err != nil {
+			// Se falhar ao parsear, usa mensagem genérica
+			errorResp.Codigo = "PARSE_ERROR"
+			errorResp.Mensagem = "Erro ao processar resposta de erro"
+		}
 
 		return nil, &providers.ProviderError{
 			Code:       errorResp.Codigo,

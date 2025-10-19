@@ -92,11 +92,12 @@ func (r *TransactionRepository) UpdateStatus(ctx context.Context, id uuid.UUID, 
 		"updated_at": time.Now(),
 	}
 
-	if status == domain.TransactionStatusProcessing {
+	switch status {
+	case domain.TransactionStatusProcessing:
 		updates["processed_at"] = time.Now()
-	} else if status == domain.TransactionStatusCompleted {
+	case domain.TransactionStatusCompleted:
 		updates["completed_at"] = time.Now()
-	} else if status == domain.TransactionStatusCancelled {
+	case domain.TransactionStatusCancelled:
 		updates["cancelled_at"] = time.Now()
 	}
 

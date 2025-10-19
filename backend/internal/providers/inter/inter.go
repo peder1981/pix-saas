@@ -106,7 +106,7 @@ func (p *InterProvider) CreateTransfer(ctx context.Context, req *providers.Trans
 
 	var interResp struct {
 		CodigoSolicitacao string `json:"codigoSolicitacao"`
-		EndToEndId        string `json:"endToEndId"`
+		EndToEndID        string `json:"endToEndId"`
 		Status            string `json:"status"`
 	}
 
@@ -116,7 +116,7 @@ func (p *InterProvider) CreateTransfer(ctx context.Context, req *providers.Trans
 
 	return &providers.TransferResponse{
 		ProviderTxID: interResp.CodigoSolicitacao,
-		E2EID:        interResp.EndToEndId,
+		E2EID:        interResp.EndToEndID,
 		Status:       mapStatus(interResp.Status),
 		ProcessedAt:  timePtr(time.Now()),
 	}, nil
@@ -137,7 +137,7 @@ func (p *InterProvider) GetTransfer(ctx context.Context, req *providers.GetTrans
 
 	var interResp struct {
 		CodigoSolicitacao string `json:"codigoSolicitacao"`
-		EndToEndId        string `json:"endToEndId"`
+		EndToEndID        string `json:"endToEndId"`
 		Status            string `json:"status"`
 	}
 
@@ -147,7 +147,7 @@ func (p *InterProvider) GetTransfer(ctx context.Context, req *providers.GetTrans
 
 	return &providers.TransferResponse{
 		ProviderTxID: interResp.CodigoSolicitacao,
-		E2EID:        interResp.EndToEndId,
+		E2EID:        interResp.EndToEndID,
 		Status:       mapStatus(interResp.Status),
 	}, nil
 }
