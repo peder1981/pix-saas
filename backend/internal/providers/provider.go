@@ -362,7 +362,7 @@ func (c *HTTPClient) Post(ctx context.Context, url string, payload interface{}, 
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -391,7 +391,7 @@ func (c *HTTPClient) Get(ctx context.Context, url string, headers map[string]str
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -426,7 +426,7 @@ func (c *HTTPClient) PostForm(ctx context.Context, urlStr string, data, headers 
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -462,7 +462,7 @@ func (c *HTTPClient) PostFormWithBasicAuth(ctx context.Context, urlStr string, d
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {

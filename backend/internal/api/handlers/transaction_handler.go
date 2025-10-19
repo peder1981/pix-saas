@@ -182,7 +182,7 @@ func (h *TransactionHandler) CreateTransfer(c *fiber.Ctx) error {
 	// TODO: Implementar cache de tokens
 	_, authErr := providerImpl.Authenticate(c.Context(), credentials)
 	if authErr != nil {
-		h.auditService.LogProviderOperation(c.Context(), *merchantID, uuid.Nil, selectedProvider.Code, "authenticate", false, authErr.Error(), 0)
+		_ = h.auditService.LogProviderOperation(c.Context(), *merchantID, uuid.Nil, selectedProvider.Code, "authenticate", false, authErr.Error(), 0)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "failed to authenticate with provider",
 		})
@@ -258,9 +258,17 @@ func (h *TransactionHandler) CreateTransfer(c *fiber.Ctx) error {
 		} else {
 			tx.ErrorMessage = err.Error()
 		}
-		h.txRepo.Update(c.Context(), tx)
+		if err := h.txRepo.Update(c.Context(), tx); err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": "failed to update transaction",
+			})
+		}
 
-		h.auditService.LogProviderOperation(c.Context(), *merchantID, tx.ID, selectedProvider.Code, "create_transfer", false, err.Error(), 0)
+		if err := h.auditService.LogProviderOperation(c.Context(), *merchantID, tx.ID, selectedProvider.Code, "create_transfer", false, err.Error(), 0); err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": "failed to log provider operation",
+			})
+		}
 
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error":   "transfer failed",
@@ -282,7 +290,7 @@ func (h *TransactionHandler) CreateTransfer(c *fiber.Ctx) error {
 	}
 
 	// Log de auditoria
-	h.auditService.LogTransaction(c.Context(), *merchantID, uuid.Nil, tx.ID, "create_transfer", map[string]interface{}{
+	_ = h.auditService.LogTransaction(c.Context(), *merchantID, uuid.Nil, tx.ID, "create_transfer", map[string]interface{}{
 		"provider": selectedProvider.Code,
 		"amount":   req.Amount,
 		"status":   tx.Status,
