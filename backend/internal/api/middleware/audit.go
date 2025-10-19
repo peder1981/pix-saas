@@ -28,7 +28,7 @@ func AuditMiddleware(auditService *audit.AuditService) fiber.Handler {
 		// Registrar log de auditoria de forma assíncrona
 		go func() {
 			if merchantID != nil {
-				auditService.LogAPIAccess(
+				_ = auditService.LogAPIAccess(
 					c.Context(),
 					*merchantID,
 					c.Method(),

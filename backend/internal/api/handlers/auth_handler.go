@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"log"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -67,7 +68,7 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 	// Buscar usuário
 	user, err := h.userRepo.GetByEmail(c.Context(), req.Email)
 	if err != nil {
-		h.auditService.LogAuthentication(c.Context(), req.Email, c.IP(), false, "user not found")
+		_ = h.auditService.LogAuthentication(c.Context(), req.Email, c.IP(), false, "user not found")
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 			"error": "invalid credentials",
 		})
@@ -75,7 +76,7 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 	
 	// Verificar se usuário está ativo
 	if !user.Active {
-		h.auditService.LogAuthentication(c.Context(), req.Email, c.IP(), false, "user inactive")
+		_ = h.auditService.LogAuthentication(c.Context(), req.Email, c.IP(), false, "user inactive")
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 			"error": "user is inactive",
 		})
@@ -83,7 +84,7 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 	
 	// Verificar senha
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password)); err != nil {
-		h.auditService.LogAuthentication(c.Context(), req.Email, c.IP(), false, "invalid password")
+		_ = h.auditService.LogAuthentication(c.Context(), req.Email, c.IP(), false, "invalid password")
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 			"error": "invalid credentials",
 		})
@@ -100,13 +101,16 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 	// Atualizar last_login
 	now := time.Now()
 	user.LastLogin = &now
-	h.userRepo.Update(c.Context(), user)
+	if err := h.userRepo.Update(c.Context(), user); err != nil {
+		// Log error but don't fail the login
+		log.Printf("Warning: Failed to update last_login: %v", err)
+	}
 	
 	// Salvar refresh token no banco
 	// TODO: Implementar salvamento de refresh token
 	
 	// Log de sucesso
-	h.auditService.LogAuthentication(c.Context(), req.Email, c.IP(), true, "")
+	_ = h.auditService.LogAuthentication(c.Context(), req.Email, c.IP(), true, "")
 	
 	return c.JSON(LoginResponse{
 		AccessToken:  tokenPair.AccessToken,
