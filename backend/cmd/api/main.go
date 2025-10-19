@@ -18,8 +18,11 @@ import (
 	"github.com/pixsaas/backend/internal/audit"
 	"github.com/pixsaas/backend/internal/domain"
 	"github.com/pixsaas/backend/internal/providers"
+	"github.com/pixsaas/backend/internal/providers/bb"
 	"github.com/pixsaas/backend/internal/providers/bradesco"
+	"github.com/pixsaas/backend/internal/providers/inter"
 	"github.com/pixsaas/backend/internal/providers/itau"
+	"github.com/pixsaas/backend/internal/providers/santander"
 	"github.com/pixsaas/backend/internal/security"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -80,6 +83,9 @@ func main() {
 	providerRegistry := providers.NewProviderRegistry()
 	providerRegistry.Register(bradesco.NewBradescoProvider())
 	providerRegistry.Register(itau.NewItauProvider())
+	providerRegistry.Register(bb.NewBBProvider())
+	providerRegistry.Register(santander.NewSantanderProvider())
+	providerRegistry.Register(inter.NewInterProvider())
 
 	// Criar aplicação Fiber
 	app := fiber.New(fiber.Config{
