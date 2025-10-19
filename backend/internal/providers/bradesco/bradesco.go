@@ -232,7 +232,7 @@ func (p *BradescoProvider) CreateTransfer(ctx context.Context, req *providers.Tr
 
 	var bradescoResp struct {
 		IdTransacao string  `json:"idTransacao"`
-		EndToEndId  string  `json:"endToEndId"`
+		EndToEndID  string  `json:"endToEndId"`
 		Status      string  `json:"status"`
 		Valor       float64 `json:"valor"`
 		DataHora    string  `json:"dataHora"`
@@ -248,7 +248,7 @@ func (p *BradescoProvider) CreateTransfer(ctx context.Context, req *providers.Tr
 
 	response := &providers.TransferResponse{
 		ProviderTxID: bradescoResp.IdTransacao,
-		E2EID:        bradescoResp.EndToEndId,
+		E2EID:        bradescoResp.EndToEndID,
 		Status:       status,
 		Amount:       req.Amount,
 		Description:  req.Description,
@@ -303,7 +303,7 @@ func (p *BradescoProvider) GetTransfer(ctx context.Context, txID string) (*provi
 
 	var bradescoResp struct {
 		IdTransacao string  `json:"idTransacao"`
-		EndToEndId  string  `json:"endToEndId"`
+		EndToEndID  string  `json:"endToEndId"`
 		Status      string  `json:"status"`
 		Valor       float64 `json:"valor"`
 		DataHora    string  `json:"dataHora"`
@@ -315,7 +315,7 @@ func (p *BradescoProvider) GetTransfer(ctx context.Context, txID string) (*provi
 
 	return &providers.TransferResponse{
 		ProviderTxID: bradescoResp.IdTransacao,
-		E2EID:        bradescoResp.EndToEndId,
+		E2EID:        bradescoResp.EndToEndID,
 		Status:       mapBradescoStatus(bradescoResp.Status),
 		Amount:       int64(bradescoResp.Valor * 100),
 		RawResponse:  map[string]interface{}{"bradesco": bradescoResp},

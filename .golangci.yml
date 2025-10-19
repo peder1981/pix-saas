@@ -1,0 +1,19 @@
+linters:
+  disable:
+    - govet
+  enable:
+    - revive
+    - errcheck
+    - gocritic
+    - goimports
+    - staticcheck
+    - unused
+    - gosimple
+    - ineffassign
+
+run:
+  timeout: 5m
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
