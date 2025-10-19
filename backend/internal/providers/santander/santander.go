@@ -109,8 +109,8 @@ func (p *Provider) CreateTransfer(ctx context.Context, req *providers.TransferRe
 	}
 
 	var santanderResp struct {
-		TransactionId string `json:"transactionId"`
-		EndToEndId    string `json:"endToEndId"`
+		TransactionID string `json:"transactionId"`
+		EndToEndID    string `json:"endToEndId"`
 		Status        string `json:"status"`
 	}
 
@@ -119,8 +119,8 @@ func (p *Provider) CreateTransfer(ctx context.Context, req *providers.TransferRe
 	}
 
 	return &providers.TransferResponse{
-		ProviderTxID: santanderResp.TransactionId,
-		E2EID:        santanderResp.EndToEndId,
+		ProviderTxID: santanderResp.TransactionID,
+		E2EID:        santanderResp.EndToEndID,
 		Status:       mapStatus(santanderResp.Status),
 		ProcessedAt:  timePtr(time.Now()),
 	}, nil
@@ -141,8 +141,8 @@ func (p *Provider) GetTransfer(ctx context.Context, req *providers.GetTransferRe
 	}
 
 	var santanderResp struct {
-		TransactionId string `json:"transactionId"`
-		EndToEndId    string `json:"endToEndId"`
+		TransactionID string `json:"transactionId"`
+		EndToEndID    string `json:"endToEndId"`
 		Status        string `json:"status"`
 	}
 
@@ -151,8 +151,8 @@ func (p *Provider) GetTransfer(ctx context.Context, req *providers.GetTransferRe
 	}
 
 	return &providers.TransferResponse{
-		ProviderTxID: santanderResp.TransactionId,
-		E2EID:        santanderResp.EndToEndId,
+		ProviderTxID: santanderResp.TransactionID,
+		E2EID:        santanderResp.EndToEndID,
 		Status:       mapStatus(santanderResp.Status),
 	}, nil
 }
@@ -183,7 +183,7 @@ func (p *Provider) CreateQRCodeStatic(ctx context.Context, req *providers.QRCode
 	}
 
 	var qrResp struct {
-		QRCodeId string `json:"qrcodeId"`
+		QRCodeID string `json:"qrcodeId"`
 		QRCode   string `json:"qrcode"`
 		Image    string `json:"image"`
 	}
@@ -193,7 +193,7 @@ func (p *Provider) CreateQRCodeStatic(ctx context.Context, req *providers.QRCode
 	}
 
 	return &providers.QRCodeResponse{
-		QRCodeID:    qrResp.QRCodeId,
+		QRCodeID:    qrResp.QRCodeID,
 		QRCode:      qrResp.QRCode,
 		QRCodeImage: qrResp.Image,
 	}, nil
@@ -218,7 +218,7 @@ func (p *Provider) GetQRCode(ctx context.Context, req *providers.GetQRCodeReques
 	}
 
 	var qrResp struct {
-		QRCodeId string `json:"qrcodeId"`
+		QRCodeID string `json:"qrcodeId"`
 		QRCode   string `json:"qrcode"`
 		Image    string `json:"image"`
 		Status   string `json:"status"`
@@ -229,7 +229,7 @@ func (p *Provider) GetQRCode(ctx context.Context, req *providers.GetQRCodeReques
 	}
 
 	return &providers.QRCodeResponse{
-		QRCodeID:    qrResp.QRCodeId,
+		QRCodeID:    qrResp.QRCodeID,
 		QRCode:      qrResp.QRCode,
 		QRCodeImage: qrResp.Image,
 		Status:      qrResp.Status,
