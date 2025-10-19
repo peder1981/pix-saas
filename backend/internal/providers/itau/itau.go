@@ -239,8 +239,8 @@ func (p *ItauProvider) CreateTransfer(ctx context.Context, req *providers.Transf
 	}
 
 	var itauResp struct {
-		IdRequisicao  string  `json:"id_requisicao"`
-		EndToEndId    string  `json:"end_to_end_id"`
+		IDRequisicao  string  `json:"id_requisicao"`
+		EndToEndID    string  `json:"end_to_end_id"`
 		Status        string  `json:"status"`
 		Valor         float64 `json:"valor"`
 		DataPagamento string  `json:"data_pagamento"`
@@ -258,8 +258,8 @@ func (p *ItauProvider) CreateTransfer(ctx context.Context, req *providers.Transf
 	status := mapItauStatus(itauResp.Status)
 
 	response := &providers.TransferResponse{
-		ProviderTxID:  itauResp.IdRequisicao,
-		E2EID:         itauResp.EndToEndId,
+		ProviderTxID:  itauResp.IDRequisicao,
+		E2EID:         itauResp.EndToEndID,
 		Status:        status,
 		Amount:        req.Amount,
 		Description:   req.Description,
@@ -320,8 +320,8 @@ func (p *ItauProvider) GetTransfer(ctx context.Context, txID string) (*providers
 	}
 
 	var itauResp struct {
-		IdRequisicao  string  `json:"id_requisicao"`
-		EndToEndId    string  `json:"end_to_end_id"`
+		IDRequisicao  string  `json:"id_requisicao"`
+		EndToEndID    string  `json:"end_to_end_id"`
 		Status        string  `json:"status"`
 		Valor         float64 `json:"valor"`
 		DataPagamento string  `json:"data_pagamento"`
@@ -332,8 +332,8 @@ func (p *ItauProvider) GetTransfer(ctx context.Context, txID string) (*providers
 	}
 
 	return &providers.TransferResponse{
-		ProviderTxID: itauResp.IdRequisicao,
-		E2EID:        itauResp.EndToEndId,
+		ProviderTxID: itauResp.IDRequisicao,
+		E2EID:        itauResp.EndToEndID,
 		Status:       mapItauStatus(itauResp.Status),
 		Amount:       int64(itauResp.Valor * 100),
 		RawResponse:  map[string]interface{}{"itau": itauResp},
@@ -395,7 +395,7 @@ func (p *ItauProvider) CreateQRCodeStatic(ctx context.Context, req *providers.QR
 	}
 
 	var qrResp struct {
-		IdQRCode    string `json:"id_qrcode"`
+		IDQRCode    string `json:"id_qrcode"`
 		QRCode      string `json:"qrcode"`
 		QRCodeImage string `json:"qrcode_imagem"`
 	}
@@ -405,7 +405,7 @@ func (p *ItauProvider) CreateQRCodeStatic(ctx context.Context, req *providers.QR
 	}
 
 	return &providers.QRCodeResponse{
-		QRCodeID:    qrResp.IdQRCode,
+		QRCodeID:    qrResp.IDQRCode,
 		QRCode:      qrResp.QRCode,
 		QRCodeImage: qrResp.QRCodeImage,
 		Amount:      req.Amount,
@@ -469,7 +469,7 @@ func (p *ItauProvider) CreateQRCodeDynamic(ctx context.Context, req *providers.Q
 	}
 
 	var qrResp struct {
-		IdQRCode    string `json:"id_qrcode"`
+		IDQRCode    string `json:"id_qrcode"`
 		QRCode      string `json:"qrcode"`
 		QRCodeImage string `json:"qrcode_imagem"`
 		Expiracao   string `json:"expiracao"`
@@ -482,7 +482,7 @@ func (p *ItauProvider) CreateQRCodeDynamic(ctx context.Context, req *providers.Q
 	expiresAt := time.Now().Add(time.Duration(req.ExpiresIn) * time.Second)
 
 	return &providers.QRCodeResponse{
-		QRCodeID:    qrResp.IdQRCode,
+		QRCodeID:    qrResp.IDQRCode,
 		QRCode:      qrResp.QRCode,
 		QRCodeImage: qrResp.QRCodeImage,
 		Amount:      req.Amount,
@@ -528,7 +528,7 @@ func (p *ItauProvider) GetQRCode(ctx context.Context, qrCodeID string) (*provide
 	}
 
 	var qrResp struct {
-		IdQRCode  string  `json:"id_qrcode"`
+		IDQRCode  string  `json:"id_qrcode"`
 		QRCode    string  `json:"qrcode"`
 		Status    string  `json:"status"`
 		Valor     float64 `json:"valor"`
@@ -540,7 +540,7 @@ func (p *ItauProvider) GetQRCode(ctx context.Context, qrCodeID string) (*provide
 	}
 
 	return &providers.QRCodeResponse{
-		QRCodeID:    qrResp.IdQRCode,
+		QRCodeID:    qrResp.IDQRCode,
 		QRCode:      qrResp.QRCode,
 		Amount:      int64(qrResp.Valor * 100),
 		Description: qrResp.Descricao,
