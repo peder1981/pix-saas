@@ -190,12 +190,14 @@
 
 ## 📊 Estatísticas
 
-- **Arquivos Criados**: 20+
-- **Linhas de Código**: ~4000+
+- **Arquivos Criados**: 35+
+- **Linhas de Código**: ~7000+
 - **Bancos Suportados**: 6+ (configurados)
 - **Bancos Implementados**: 2 (Bradesco, Itaú)
+- **Endpoints API**: 7
 - **Compliance**: PCI DSS, LGPD
 - **Retenção de Logs**: 5 anos
+- **Cobertura**: Backend completo, Frontend estruturado
 
 ## 🔐 Segurança Implementada
 
