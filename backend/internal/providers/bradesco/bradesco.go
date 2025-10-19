@@ -84,7 +84,14 @@ func (p *BradescoProvider) Authenticate(ctx context.Context, credentials provide
 		"client_secret": credentials.ClientSecret,
 	}
 
-	jsonData, _ := json.Marshal(data)
+	jsonData, err := json.Marshal(data)
+	if err != nil {
+		return nil, &providers.ProviderError{
+			Code:    "MARSHAL_ERROR",
+			Message: "Erro ao serializar dados",
+			Details: map[string]interface{}{"error": err.Error()},
+		}
+	}
 	req, err := http.NewRequestWithContext(ctx, "POST", p.authURL, bytes.NewBuffer(jsonData))
 	if err != nil {
 		return nil, err
@@ -104,7 +111,10 @@ func (p *BradescoProvider) Authenticate(ctx context.Context, credentials provide
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			body = []byte("failed to read response body")
+		}
 		return nil, &providers.ProviderError{
 			Code:       "AUTH_FAILED",
 			Message:    "Autenticação falhou",
@@ -179,7 +189,14 @@ func (p *BradescoProvider) CreateTransfer(ctx context.Context, req *providers.Tr
 	}
 	payload["recebedor"] = recebedor
 
-	jsonData, _ := json.Marshal(payload)
+	jsonData, err := json.Marshal(payload)
+	if err != nil {
+		return nil, &providers.ProviderError{
+			Code:    "MARSHAL_ERROR",
+			Message: "Erro ao serializar payload",
+			Details: map[string]interface{}{"error": err.Error()},
+		}
+	}
 	httpReq, err := http.NewRequestWithContext(ctx, "POST", endpoint, bytes.NewBuffer(jsonData))
 	if err != nil {
 		return nil, err
@@ -199,7 +216,10 @@ func (p *BradescoProvider) CreateTransfer(ctx context.Context, req *providers.Tr
 	}
 	defer resp.Body.Close()
 
-	body, _ := io.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		body = []byte("failed to read response body")
+	}
 
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
 		return nil, &providers.ProviderError{
@@ -267,7 +287,10 @@ func (p *BradescoProvider) GetTransfer(ctx context.Context, txID string) (*provi
 	}
 	defer resp.Body.Close()
 
-	body, _ := io.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		body = []byte("failed to read response body")
+	}
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, &providers.ProviderError{

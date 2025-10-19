@@ -261,7 +261,7 @@ func (p *ItauProvider) GetTransfer(ctx context.Context, txID string) (*providers
 	// Endpoint: GET /sispag/v1/pagamentos/pix/{id_requisicao}
 	endpoint := fmt.Sprintf("%s/sispag/v1/pagamentos/pix/%s", p.baseURL, txID)
 
-	req, err := http.NewRequestWithContext(ctx, "GET", endpoint, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", endpoint, http.NoBody)
 	if err != nil {
 		return nil, err
 	}
@@ -454,7 +454,7 @@ func (p *ItauProvider) CreateQRCodeDynamic(ctx context.Context, req *providers.Q
 func (p *ItauProvider) GetQRCode(ctx context.Context, qrCodeID string) (*providers.QRCodeResponse, error) {
 	endpoint := fmt.Sprintf("%s/sispag/v1/qrcodes/%s", p.baseURL, qrCodeID)
 
-	req, err := http.NewRequestWithContext(ctx, "GET", endpoint, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", endpoint, http.NoBody)
 	if err != nil {
 		return nil, err
 	}
@@ -509,7 +509,7 @@ func (p *ItauProvider) ValidatePixKey(ctx context.Context, pixKey string, pixKey
 }
 
 func (p *ItauProvider) HealthCheck(ctx context.Context) error {
-	req, err := http.NewRequestWithContext(ctx, "GET", p.baseURL, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", p.baseURL, http.NoBody)
 	if err != nil {
 		return err
 	}
