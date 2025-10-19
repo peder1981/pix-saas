@@ -17,7 +17,6 @@ func SecurityHeaders() fiber.Handler {
 		HSTSExcludeSubdomains:     false,
 		ContentSecurityPolicy:     "default-src 'self'",
 		ReferrerPolicy:            "no-referrer",
-		PermissionsPolicy:         "geolocation=(), microphone=(), camera=()",
 	})
 }
 

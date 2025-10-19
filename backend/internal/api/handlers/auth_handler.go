@@ -6,7 +6,6 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 	"github.com/pixsaas/backend/internal/audit"
-	"github.com/pixsaas/backend/internal/domain"
 	"github.com/pixsaas/backend/internal/repository"
 	"github.com/pixsaas/backend/internal/security"
 	"golang.org/x/crypto/bcrypt"

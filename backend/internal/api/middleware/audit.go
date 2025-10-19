@@ -25,23 +25,20 @@ func AuditMiddleware(auditService *audit.AuditService) fiber.Handler {
 			merchantID = mid
 		}
 		
-		var userID *uuid.UUID
-		if uid, ok := c.Locals("user_id").(uuid.UUID); ok {
-			userID = &uid
-		}
-		
 		// Registrar log de auditoria de forma assíncrona
 		go func() {
-			auditService.LogAPIAccess(
-				c.Context(),
-				*merchantID,
-				c.Method(),
-				c.Path(),
-				c.IP(),
-				c.Get("User-Agent"),
-				c.Response().StatusCode(),
-				duration,
-			)
+			if merchantID != nil {
+				auditService.LogAPIAccess(
+					c.Context(),
+					*merchantID,
+					c.Method(),
+					c.Path(),
+					c.IP(),
+					c.Get("User-Agent"),
+					c.Response().StatusCode(),
+					duration,
+				)
+			}
 		}()
 		
 		return err

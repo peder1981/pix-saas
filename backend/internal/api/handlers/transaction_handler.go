@@ -148,8 +148,17 @@ func (h *TransactionHandler) CreateTransfer(c *fiber.Ctx) error {
 		})
 	}
 	
-	// Inicializar provider
-	if err := providerImpl.Initialize(selectedProvider.Config); err != nil {
+	// Inicializar provider com configuração convertida
+	providerConfig := providers.ProviderConfig{
+		BaseURL:      selectedProvider.Config.BaseURL,
+		AuthURL:      selectedProvider.Config.AuthURL,
+		SandboxURL:   selectedProvider.Config.SandboxURL,
+		Timeout:      selectedProvider.Config.Timeout,
+		MaxRetries:   selectedProvider.Config.MaxRetries,
+		RequiresMTLS: selectedProvider.Config.RequiresMTLS,
+	}
+	
+	if err := providerImpl.Initialize(providerConfig); err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "failed to initialize provider",
 		})
@@ -171,9 +180,9 @@ func (h *TransactionHandler) CreateTransfer(c *fiber.Ctx) error {
 	}
 	
 	// TODO: Implementar cache de tokens
-	authToken, err := providerImpl.Authenticate(c.Context(), credentials)
-	if err != nil {
-		h.auditService.LogProviderOperation(c.Context(), *merchantID, uuid.Nil, selectedProvider.Code, "authenticate", false, err.Error(), 0)
+	_, authErr := providerImpl.Authenticate(c.Context(), credentials)
+	if authErr != nil {
+		h.auditService.LogProviderOperation(c.Context(), *merchantID, uuid.Nil, selectedProvider.Code, "authenticate", false, authErr.Error(), 0)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "failed to authenticate with provider",
 		})
