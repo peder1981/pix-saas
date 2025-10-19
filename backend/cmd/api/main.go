@@ -12,6 +12,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/logger"
+
 	"github.com/pixsaas/backend/configs"
 	"github.com/pixsaas/backend/internal/api/handlers"
 	"github.com/pixsaas/backend/internal/api/middleware"
@@ -42,7 +43,7 @@ func main() {
 
 	// Auto-migrate (apenas em desenvolvimento)
 	if cfg.Server.IsDevelopment() {
-		if err := db.AutoMigrate(
+		if migrateErr := db.AutoMigrate(
 			&domain.Merchant{},
 			&domain.User{},
 			&domain.Provider{},
@@ -53,8 +54,8 @@ func main() {
 			&domain.WebhookDelivery{},
 			&domain.APIKey{},
 			&domain.RefreshToken{},
-		); err != nil {
-			log.Printf("Aviso: Erro no auto-migrate: %v", err)
+		); migrateErr != nil {
+			log.Printf("Aviso: Erro no auto-migrate: %v", migrateErr)
 		}
 	}
 
@@ -63,7 +64,7 @@ func main() {
 	if err != nil || len(encryptionKey) != 32 {
 		log.Fatalf("Chave de criptografia inválida. Deve ser 32 bytes em base64")
 	}
-	
+
 	encryptionService, err := security.NewEncryptionService(encryptionKey)
 	if err != nil {
 		log.Fatalf("Erro ao criar serviço de criptografia: %v", err)
@@ -132,7 +133,7 @@ func main() {
 	txHandler := handlers.NewTransactionHandler(db, auditService, encryptionService, providerRegistry)
 	transactions := authenticated.Group("/transactions")
 	transactions.Use(middleware.RequireMerchant())
-	
+
 	transactions.Post("/transfer", txHandler.CreateTransfer)
 	transactions.Get("/:id", txHandler.GetTransaction)
 	transactions.Get("", txHandler.ListTransactions)
@@ -162,11 +163,13 @@ func main() {
 
 	log.Println("🛑 Desligando servidor...")
 
-	ctx, cancel := context.WithTimeout(context.Background(), cfg.Server.ShutdownTimeout)
-	defer cancel()
+	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), cfg.Server.ShutdownTimeout)
+	defer shutdownCancel()
 
-	if err := app.ShutdownWithContext(ctx); err != nil {
-		log.Fatalf("Erro ao desligar servidor: %v", err)
+	if err := app.ShutdownWithContext(shutdownCtx); err != nil {
+		log.Printf("Erro ao desligar servidor: %v", err)
+		shutdownCancel()
+		os.Exit(1)
 	}
 
 	log.Println("✅ Servidor desligado com sucesso")

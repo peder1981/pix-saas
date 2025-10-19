@@ -6,30 +6,30 @@ import (
 	"log"
 	"os"
 
-	"github.com/pixsaas/backend/configs"
-	"github.com/pixsaas/backend/internal/domain"
-	"github.com/pixsaas/backend/internal/security"
 	"github.com/spf13/cobra"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	gormlogger "gorm.io/gorm/logger"
+
+	"github.com/pixsaas/backend/configs"
+	"github.com/pixsaas/backend/internal/domain"
+	"github.com/pixsaas/backend/internal/security"
 )
 
 var (
-	db                *gorm.DB
-	encryptionService *security.EncryptionService
-	cfg               *configs.Config
+	db  *gorm.DB
+	cfg *configs.Config
 )
 
 func main() {
 	var err error
-	
+
 	// Carregar configuração
 	cfg, err = configs.LoadConfig("./configs")
 	if err != nil {
 		log.Fatalf("Erro ao carregar configuração: %v", err)
 	}
-	
+
 	// Conectar ao banco
 	db, err = gorm.Open(postgres.Open(cfg.Database.GetDSN()), &gorm.Config{
 		Logger: gormlogger.Default.LogMode(gormlogger.Silent),
@@ -37,18 +37,18 @@ func main() {
 	if err != nil {
 		log.Fatalf("Erro ao conectar ao banco: %v", err)
 	}
-	
+
 	// Inicializar encryption service
 	encryptionKey, err := base64.StdEncoding.DecodeString(cfg.Encryption.Key)
 	if err != nil || len(encryptionKey) != 32 {
 		log.Fatalf("Chave de criptografia inválida")
 	}
-	
-	encryptionService, err = security.NewEncryptionService(encryptionKey)
+
+	_, err = security.NewEncryptionService(encryptionKey)
 	if err != nil {
 		log.Fatalf("Erro ao criar serviço de criptografia: %v", err)
 	}
-	
+
 	// Executar CLI
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Fprintln(os.Stderr, err)
@@ -59,7 +59,7 @@ func main() {
 var rootCmd = &cobra.Command{
 	Use:   "pixsaas-cli",
 	Short: "PIX SaaS CLI - Ferramenta administrativa",
-	Long: `CLI para gerenciamento administrativo do PIX SaaS.
+	Long: `CLI para gerenciamento do PIX SaaS.
 	
 Permite adicionar/remover providers, configurar merchants e gerenciar credenciais.`,
 }
@@ -80,13 +80,31 @@ var providerAddCmd = &cobra.Command{
 	Use:   "add",
 	Short: "Adicionar novo provider",
 	Run: func(cmd *cobra.Command, args []string) {
-		code, _ := cmd.Flags().GetString("code")
-		name, _ := cmd.Flags().GetString("name")
-		ispb, _ := cmd.Flags().GetString("ispb")
-		providerType, _ := cmd.Flags().GetString("type")
-		baseURL, _ := cmd.Flags().GetString("base-url")
-		authURL, _ := cmd.Flags().GetString("auth-url")
-		
+		code, err := cmd.Flags().GetString("code")
+		if err != nil {
+			log.Fatalf("Erro ao obter flag code: %v", err)
+		}
+		name, err := cmd.Flags().GetString("name")
+		if err != nil {
+			log.Fatalf("Erro ao obter flag name: %v", err)
+		}
+		ispb, err := cmd.Flags().GetString("ispb")
+		if err != nil {
+			log.Fatalf("Erro ao obter flag ispb: %v", err)
+		}
+		providerType, err := cmd.Flags().GetString("type")
+		if err != nil {
+			log.Fatalf("Erro ao obter flag type: %v", err)
+		}
+		baseURL, err := cmd.Flags().GetString("base-url")
+		if err != nil {
+			log.Fatalf("Erro ao obter flag base-url: %v", err)
+		}
+		authURL, err := cmd.Flags().GetString("auth-url")
+		if err != nil {
+			log.Fatalf("Erro ao obter flag auth-url: %v", err)
+		}
+
 		provider := &domain.Provider{
 			Code:   code,
 			Name:   name,
@@ -101,11 +119,11 @@ var providerAddCmd = &cobra.Command{
 				RequiresMTLS: true,
 			},
 		}
-		
+
 		if err := db.Create(provider).Error; err != nil {
 			log.Fatalf("Erro ao criar provider: %v", err)
 		}
-		
+
 		fmt.Printf("✅ Provider '%s' criado com sucesso (ID: %s)\n", name, provider.ID)
 	},
 }
@@ -118,7 +136,7 @@ var providerListCmd = &cobra.Command{
 		if err := db.Find(&providers).Error; err != nil {
 			log.Fatalf("Erro ao listar providers: %v", err)
 		}
-		
+
 		fmt.Println("\n📋 Providers cadastrados:")
 		fmt.Println("─────────────────────────────────────────────────────────────")
 		for _, p := range providers {
@@ -138,17 +156,17 @@ var providerDeleteCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		code := args[0]
-		
+
 		result := db.Where("code = ?", code).Delete(&domain.Provider{})
 		if result.Error != nil {
 			log.Fatalf("Erro ao deletar provider: %v", result.Error)
 		}
-		
+
 		if result.RowsAffected == 0 {
 			fmt.Printf("⚠️  Provider '%s' não encontrado\n", code)
 			return
 		}
-		
+
 		fmt.Printf("✅ Provider '%s' deletado com sucesso\n", code)
 	},
 }
@@ -157,19 +175,29 @@ func init() {
 	providerCmd.AddCommand(providerAddCmd)
 	providerCmd.AddCommand(providerListCmd)
 	providerCmd.AddCommand(providerDeleteCmd)
-	
+
 	providerAddCmd.Flags().String("code", "", "Código do provider (ex: bradesco)")
 	providerAddCmd.Flags().String("name", "", "Nome do provider")
 	providerAddCmd.Flags().String("ispb", "", "ISPB do provider")
 	providerAddCmd.Flags().String("type", "bank", "Tipo (bank, digital_bank, cooperative, fintech, psp)")
 	providerAddCmd.Flags().String("base-url", "", "URL base da API")
 	providerAddCmd.Flags().String("auth-url", "", "URL de autenticação")
-	
-	providerAddCmd.MarkFlagRequired("code")
-	providerAddCmd.MarkFlagRequired("name")
-	providerAddCmd.MarkFlagRequired("ispb")
-	providerAddCmd.MarkFlagRequired("base-url")
-	providerAddCmd.MarkFlagRequired("auth-url")
+
+	if err := providerAddCmd.MarkFlagRequired("code"); err != nil {
+		log.Printf("Erro ao marcar flag como obrigatória: %v", err)
+	}
+	if err := providerAddCmd.MarkFlagRequired("name"); err != nil {
+		log.Printf("Erro ao marcar flag como obrigatória: %v", err)
+	}
+	if err := providerAddCmd.MarkFlagRequired("ispb"); err != nil {
+		log.Printf("Erro ao marcar flag como obrigatória: %v", err)
+	}
+	if err := providerAddCmd.MarkFlagRequired("base-url"); err != nil {
+		log.Printf("Erro ao marcar flag como obrigatória: %v", err)
+	}
+	if err := providerAddCmd.MarkFlagRequired("auth-url"); err != nil {
+		log.Printf("Erro ao marcar flag como obrigatória: %v", err)
+	}
 }
 
 // Merchant commands
@@ -186,7 +214,7 @@ var merchantListCmd = &cobra.Command{
 		if err := db.Find(&merchants).Error; err != nil {
 			log.Fatalf("Erro ao listar merchants: %v", err)
 		}
-		
+
 		fmt.Println("\n📋 Merchants cadastrados:")
 		fmt.Println("─────────────────────────────────────────────────────────────")
 		for _, m := range merchants {
@@ -218,7 +246,7 @@ var keysGenerateCmd = &cobra.Command{
 		if err != nil {
 			log.Fatalf("Erro ao gerar chave: %v", err)
 		}
-		
+
 		fmt.Println("\n🔑 Nova chave de criptografia gerada:")
 		fmt.Println("─────────────────────────────────────────────────────────────")
 		fmt.Println(key)
