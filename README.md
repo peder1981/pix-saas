@@ -193,15 +193,34 @@ ENV=development
 
 ## 🧪 Testes
 
+### Autorun Completo (Recomendado)
 ```bash
-# Backend
+# Executa todos os testes automaticamente e corrige inconsistências
+./scripts/autorun-tests.sh
+```
+
+### Testes Manuais
+```bash
+# Backend - Todos os testes
 cd backend
 go test ./... -v -cover
+
+# Backend - Testes específicos
+go test ./internal/security/... -v
+go test ./internal/providers/... -v
 
 # Frontend
 cd frontend
 npm test
 ```
+
+### Validação Local (Antes de Commit)
+```bash
+# Valida testes, lint, build e segurança
+./scripts/validate-ci.sh
+```
+
+**Resultados**: Ver [AUTORUN_RESULTS.md](./AUTORUN_RESULTS.md) para detalhes completos
 
 ## 📦 Deploy
 
