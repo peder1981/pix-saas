@@ -111,7 +111,7 @@ func TestEncryptBytes(t *testing.T) {
 	}
 
 	plaintext := []byte("test data")
-	
+
 	encrypted, err := service.EncryptBytes(plaintext)
 	if err != nil {
 		t.Fatalf("EncryptBytes() error = %v", err)

@@ -12,19 +12,19 @@ import (
 func AuditMiddleware(auditService *audit.AuditService) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		start := time.Now()
-		
+
 		// Processar requisição
 		err := c.Next()
-		
+
 		// Calcular duração
 		duration := time.Since(start).Milliseconds()
-		
+
 		// Extrair informações do contexto
 		var merchantID *uuid.UUID
 		if mid, ok := c.Locals("merchant_id").(*uuid.UUID); ok {
 			merchantID = mid
 		}
-		
+
 		// Registrar log de auditoria de forma assíncrona
 		go func() {
 			if merchantID != nil {
@@ -40,7 +40,7 @@ func AuditMiddleware(auditService *audit.AuditService) fiber.Handler {
 				)
 			}
 		}()
-		
+
 		return err
 	}
 }

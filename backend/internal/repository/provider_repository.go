@@ -69,11 +69,11 @@ func (r *ProviderRepository) Delete(ctx context.Context, id uuid.UUID) error {
 func (r *ProviderRepository) List(ctx context.Context, activeOnly bool) ([]domain.Provider, error) {
 	var providers []domain.Provider
 	query := r.db.WithContext(ctx).Where("deleted_at IS NULL")
-	
+
 	if activeOnly {
 		query = query.Where("active = true")
 	}
-	
+
 	err := query.Order("priority DESC, name ASC").Find(&providers).Error
 	return providers, err
 }
@@ -149,11 +149,11 @@ func (r *MerchantProviderRepository) ListByMerchant(ctx context.Context, merchan
 	query := r.db.WithContext(ctx).
 		Preload("Provider").
 		Where("merchant_id = ? AND deleted_at IS NULL", merchantID)
-	
+
 	if activeOnly {
 		query = query.Where("active = true")
 	}
-	
+
 	err := query.Find(&mps).Error
 	return mps, err
 }

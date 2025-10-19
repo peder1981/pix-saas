@@ -19,7 +19,7 @@ func TestNewProviderRegistry(t *testing.T) {
 
 func TestProviderRegistryRegisterAndGet(t *testing.T) {
 	registry := NewProviderRegistry()
-	
+
 	// Create mock provider
 	mockProvider := &MockProvider{
 		code: "test",
@@ -66,7 +66,7 @@ func TestProviderRegistryGetAll(t *testing.T) {
 
 func TestNewHTTPClient(t *testing.T) {
 	client := NewHTTPClient(30, false)
-	
+
 	if client.timeout != 30*time.Second {
 		t.Errorf("NewHTTPClient() timeout = %v, want 30s", client.timeout)
 	}
@@ -78,7 +78,7 @@ func TestNewHTTPClient(t *testing.T) {
 
 func TestNewProviderError(t *testing.T) {
 	err := NewProviderError("TEST_CODE", "Test message", nil)
-	
+
 	if err == nil {
 		t.Fatal("NewProviderError() returned nil")
 	}

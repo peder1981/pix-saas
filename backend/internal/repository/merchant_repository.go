@@ -79,12 +79,12 @@ func (r *MerchantRepository) Delete(ctx context.Context, id uuid.UUID) error {
 func (r *MerchantRepository) List(ctx context.Context, limit, offset int) ([]domain.Merchant, int64, error) {
 	var merchants []domain.Merchant
 	var total int64
-	
+
 	err := r.db.WithContext(ctx).Model(&domain.Merchant{}).Where("deleted_at IS NULL").Count(&total).Error
 	if err != nil {
 		return nil, 0, err
 	}
-	
+
 	err = r.db.WithContext(ctx).Where("deleted_at IS NULL").Limit(limit).Offset(offset).Find(&merchants).Error
 	return merchants, total, err
 }

@@ -10,17 +10,17 @@ import (
 
 // JWTService gerencia tokens JWT
 type JWTService struct {
-	secretKey        []byte
-	accessTokenTTL   time.Duration
-	refreshTokenTTL  time.Duration
+	secretKey       []byte
+	accessTokenTTL  time.Duration
+	refreshTokenTTL time.Duration
 }
 
 // Claims representa as claims do JWT
 type Claims struct {
-	UserID     uuid.UUID `json:"user_id"`
+	UserID     uuid.UUID  `json:"user_id"`
 	MerchantID *uuid.UUID `json:"merchant_id,omitempty"`
-	Email      string    `json:"email"`
-	Role       string    `json:"role"`
+	Email      string     `json:"email"`
+	Role       string     `json:"role"`
 	jwt.RegisteredClaims
 }
 
@@ -49,13 +49,13 @@ func (s *JWTService) GenerateTokenPair(userID uuid.UUID, merchantID *uuid.UUID, 
 	if err != nil {
 		return nil, err
 	}
-	
+
 	// Refresh Token
 	refreshToken, err := s.GenerateRefreshToken(userID)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	return &TokenPair{
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
@@ -68,7 +68,7 @@ func (s *JWTService) GenerateTokenPair(userID uuid.UUID, merchantID *uuid.UUID, 
 // GenerateAccessToken gera um token de acesso
 func (s *JWTService) GenerateAccessToken(userID uuid.UUID, merchantID *uuid.UUID, email, role string) (string, time.Time, error) {
 	expiresAt := time.Now().Add(s.accessTokenTTL)
-	
+
 	claims := &Claims{
 		UserID:     userID,
 		MerchantID: merchantID,
@@ -83,20 +83,20 @@ func (s *JWTService) GenerateAccessToken(userID uuid.UUID, merchantID *uuid.UUID
 			ID:        uuid.New().String(),
 		},
 	}
-	
+
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	tokenString, err := token.SignedString(s.secretKey)
 	if err != nil {
 		return "", time.Time{}, err
 	}
-	
+
 	return tokenString, expiresAt, nil
 }
 
 // GenerateRefreshToken gera um token de refresh
 func (s *JWTService) GenerateRefreshToken(userID uuid.UUID) (string, error) {
 	expiresAt := time.Now().Add(s.refreshTokenTTL)
-	
+
 	claims := &jwt.RegisteredClaims{
 		ExpiresAt: jwt.NewNumericDate(expiresAt),
 		IssuedAt:  jwt.NewNumericDate(time.Now()),
@@ -105,7 +105,7 @@ func (s *JWTService) GenerateRefreshToken(userID uuid.UUID) (string, error) {
 		Subject:   userID.String(),
 		ID:        uuid.New().String(),
 	}
-	
+
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	return token.SignedString(s.secretKey)
 }
@@ -118,15 +118,15 @@ func (s *JWTService) ValidateToken(tokenString string) (*Claims, error) {
 		}
 		return s.secretKey, nil
 	})
-	
+
 	if err != nil {
 		return nil, err
 	}
-	
+
 	if claims, ok := token.Claims.(*Claims); ok && token.Valid {
 		return claims, nil
 	}
-	
+
 	return nil, errors.New("invalid token")
 }
 
@@ -138,11 +138,11 @@ func (s *JWTService) ValidateRefreshToken(tokenString string) (uuid.UUID, error)
 		}
 		return s.secretKey, nil
 	})
-	
+
 	if err != nil {
 		return uuid.Nil, err
 	}
-	
+
 	if claims, ok := token.Claims.(*jwt.RegisteredClaims); ok && token.Valid {
 		userID, err := uuid.Parse(claims.Subject)
 		if err != nil {
@@ -150,7 +150,7 @@ func (s *JWTService) ValidateRefreshToken(tokenString string) (uuid.UUID, error)
 		}
 		return userID, nil
 	}
-	
+
 	return uuid.Nil, errors.New("invalid refresh token")
 }
 
@@ -159,15 +159,15 @@ func ExtractTokenFromHeader(authHeader string) (string, error) {
 	if authHeader == "" {
 		return "", errors.New("authorization header is empty")
 	}
-	
+
 	const bearerPrefix = "Bearer "
 	if len(authHeader) < len(bearerPrefix) {
 		return "", errors.New("invalid authorization header format")
 	}
-	
+
 	if authHeader[:len(bearerPrefix)] != bearerPrefix {
 		return "", errors.New("authorization header must start with Bearer")
 	}
-	
+
 	return authHeader[len(bearerPrefix):], nil
 }

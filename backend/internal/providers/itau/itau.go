@@ -49,11 +49,11 @@ func (p *ItauProvider) Initialize(config domain.ProviderConfig) error {
 	p.config = config
 	p.baseURL = config.BaseURL
 	p.authURL = config.AuthURL
-	
+
 	if config.Timeout > 0 {
 		p.httpClient.Timeout = time.Duration(config.Timeout) * time.Second
 	}
-	
+
 	return nil
 }
 
@@ -68,7 +68,7 @@ func (p *ItauProvider) Authenticate(ctx context.Context, credentials providers.P
 				Details: map[string]interface{}{"error": err.Error()},
 			}
 		}
-		
+
 		p.httpClient.Transport = &http.Transport{
 			TLSClientConfig: &tls.Config{
 				Certificates: []tls.Certificate{cert},
@@ -76,7 +76,7 @@ func (p *ItauProvider) Authenticate(ctx context.Context, credentials providers.P
 			},
 		}
 	}
-	
+
 	// Requisição OAuth2 com client_credentials
 	data := map[string]string{
 		"grant_type":    "client_credentials",
@@ -84,15 +84,15 @@ func (p *ItauProvider) Authenticate(ctx context.Context, credentials providers.P
 		"client_secret": credentials.ClientSecret,
 		"scope":         "sispag",
 	}
-	
+
 	jsonData, _ := json.Marshal(data)
 	req, err := http.NewRequestWithContext(ctx, "POST", p.authURL, bytes.NewBuffer(jsonData))
 	if err != nil {
 		return nil, err
 	}
-	
+
 	req.Header.Set("Content-Type", "application/json")
-	
+
 	resp, err := p.httpClient.Do(req)
 	if err != nil {
 		return nil, &providers.ProviderError{
@@ -103,7 +103,7 @@ func (p *ItauProvider) Authenticate(ctx context.Context, credentials providers.P
 		}
 	}
 	defer resp.Body.Close()
-	
+
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
 		return nil, &providers.ProviderError{
@@ -113,18 +113,18 @@ func (p *ItauProvider) Authenticate(ctx context.Context, credentials providers.P
 			Details:    map[string]interface{}{"response": string(body)},
 		}
 	}
-	
+
 	var authResp struct {
 		AccessToken string `json:"access_token"`
 		TokenType   string `json:"token_type"`
 		ExpiresIn   int    `json:"expires_in"`
 		Scope       string `json:"scope"`
 	}
-	
+
 	if err := json.NewDecoder(resp.Body).Decode(&authResp); err != nil {
 		return nil, err
 	}
-	
+
 	return &providers.AuthToken{
 		AccessToken: authResp.AccessToken,
 		TokenType:   authResp.TokenType,
@@ -141,14 +141,14 @@ func (p *ItauProvider) RefreshToken(ctx context.Context, refreshToken string) (*
 func (p *ItauProvider) CreateTransfer(ctx context.Context, req *providers.TransferRequest) (*providers.TransferResponse, error) {
 	// Endpoint: POST /sispag/v1/pagamentos/pix
 	endpoint := fmt.Sprintf("%s/sispag/v1/pagamentos/pix", p.baseURL)
-	
+
 	// Montar payload conforme documentação Itaú
 	payload := map[string]interface{}{
 		"id_requisicao": req.ExternalID,
 		"valor":         float64(req.Amount) / 100.0,
 		"descricao":     req.Description,
 	}
-	
+
 	// Dados do pagador
 	if req.PayerPixKey != "" {
 		payload["chave_pagador"] = req.PayerPixKey
@@ -159,7 +159,7 @@ func (p *ItauProvider) CreateTransfer(ctx context.Context, req *providers.Transf
 			"tipo":    req.PayerAccountType,
 		}
 	}
-	
+
 	// Dados do recebedor
 	if req.PayeePixKey != "" {
 		payload["chave_recebedor"] = req.PayeePixKey
@@ -172,20 +172,20 @@ func (p *ItauProvider) CreateTransfer(ctx context.Context, req *providers.Transf
 			"tipo":    req.PayeeAccountType,
 		}
 	}
-	
+
 	if req.PayeeDocument != "" {
 		payload["cpf_cnpj_recebedor"] = req.PayeeDocument
 	}
-	
+
 	jsonData, _ := json.Marshal(payload)
 	httpReq, err := http.NewRequestWithContext(ctx, "POST", endpoint, bytes.NewBuffer(jsonData))
 	if err != nil {
 		return nil, err
 	}
-	
+
 	httpReq.Header.Set("Content-Type", "application/json")
 	// Token deve ser passado via context ou armazenado
-	
+
 	resp, err := p.httpClient.Do(httpReq)
 	if err != nil {
 		return nil, &providers.ProviderError{
@@ -196,20 +196,20 @@ func (p *ItauProvider) CreateTransfer(ctx context.Context, req *providers.Transf
 		}
 	}
 	defer resp.Body.Close()
-	
+
 	body, _ := io.ReadAll(resp.Body)
-	
+
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
 		var errorResp struct {
-			Codigo    string `json:"codigo"`
-			Mensagem  string `json:"mensagem"`
-			Detalhes  []struct {
+			Codigo   string `json:"codigo"`
+			Mensagem string `json:"mensagem"`
+			Detalhes []struct {
 				Campo    string `json:"campo"`
 				Mensagem string `json:"mensagem"`
 			} `json:"detalhes"`
 		}
 		json.Unmarshal(body, &errorResp)
-		
+
 		return nil, &providers.ProviderError{
 			Code:       errorResp.Codigo,
 			Message:    errorResp.Mensagem,
@@ -217,55 +217,55 @@ func (p *ItauProvider) CreateTransfer(ctx context.Context, req *providers.Transf
 			Details:    map[string]interface{}{"response": string(body)},
 		}
 	}
-	
+
 	var itauResp struct {
-		IdRequisicao string `json:"id_requisicao"`
-		EndToEndId   string `json:"end_to_end_id"`
-		Status       string `json:"status"`
-		Valor        float64 `json:"valor"`
-		DataPagamento string `json:"data_pagamento"`
-		Recebedor    struct {
-			Nome      string `json:"nome"`
-			CpfCnpj   string `json:"cpf_cnpj"`
-			ChavePix  string `json:"chave_pix,omitempty"`
+		IdRequisicao  string  `json:"id_requisicao"`
+		EndToEndId    string  `json:"end_to_end_id"`
+		Status        string  `json:"status"`
+		Valor         float64 `json:"valor"`
+		DataPagamento string  `json:"data_pagamento"`
+		Recebedor     struct {
+			Nome     string `json:"nome"`
+			CpfCnpj  string `json:"cpf_cnpj"`
+			ChavePix string `json:"chave_pix,omitempty"`
 		} `json:"recebedor"`
 	}
-	
+
 	if err := json.Unmarshal(body, &itauResp); err != nil {
 		return nil, err
 	}
-	
+
 	status := mapItauStatus(itauResp.Status)
-	
+
 	response := &providers.TransferResponse{
-		ProviderTxID:   itauResp.IdRequisicao,
-		E2EID:          itauResp.EndToEndId,
-		Status:         status,
-		Amount:         req.Amount,
-		Description:    req.Description,
-		PayeeName:      itauResp.Recebedor.Nome,
-		PayeeDocument:  itauResp.Recebedor.CpfCnpj,
-		PayeePixKey:    itauResp.Recebedor.ChavePix,
-		RawResponse:    map[string]interface{}{"itau": itauResp},
+		ProviderTxID:  itauResp.IdRequisicao,
+		E2EID:         itauResp.EndToEndId,
+		Status:        status,
+		Amount:        req.Amount,
+		Description:   req.Description,
+		PayeeName:     itauResp.Recebedor.Nome,
+		PayeeDocument: itauResp.Recebedor.CpfCnpj,
+		PayeePixKey:   itauResp.Recebedor.ChavePix,
+		RawResponse:   map[string]interface{}{"itau": itauResp},
 	}
-	
+
 	if status == domain.TransactionStatusCompleted {
 		now := time.Now()
 		response.CompletedAt = &now
 	}
-	
+
 	return response, nil
 }
 
 func (p *ItauProvider) GetTransfer(ctx context.Context, txID string) (*providers.TransferResponse, error) {
 	// Endpoint: GET /sispag/v1/pagamentos/pix/{id_requisicao}
 	endpoint := fmt.Sprintf("%s/sispag/v1/pagamentos/pix/%s", p.baseURL, txID)
-	
+
 	req, err := http.NewRequestWithContext(ctx, "GET", endpoint, nil)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	resp, err := p.httpClient.Do(req)
 	if err != nil {
 		return nil, &providers.ProviderError{
@@ -276,9 +276,9 @@ func (p *ItauProvider) GetTransfer(ctx context.Context, txID string) (*providers
 		}
 	}
 	defer resp.Body.Close()
-	
+
 	body, _ := io.ReadAll(resp.Body)
-	
+
 	if resp.StatusCode == http.StatusNotFound {
 		return nil, &providers.ProviderError{
 			Code:       "NOT_FOUND",
@@ -286,7 +286,7 @@ func (p *ItauProvider) GetTransfer(ctx context.Context, txID string) (*providers
 			StatusCode: resp.StatusCode,
 		}
 	}
-	
+
 	if resp.StatusCode != http.StatusOK {
 		return nil, &providers.ProviderError{
 			Code:       "QUERY_FAILED",
@@ -295,19 +295,19 @@ func (p *ItauProvider) GetTransfer(ctx context.Context, txID string) (*providers
 			Details:    map[string]interface{}{"response": string(body)},
 		}
 	}
-	
+
 	var itauResp struct {
-		IdRequisicao string `json:"id_requisicao"`
-		EndToEndId   string `json:"end_to_end_id"`
-		Status       string `json:"status"`
-		Valor        float64 `json:"valor"`
-		DataPagamento string `json:"data_pagamento"`
+		IdRequisicao  string  `json:"id_requisicao"`
+		EndToEndId    string  `json:"end_to_end_id"`
+		Status        string  `json:"status"`
+		Valor         float64 `json:"valor"`
+		DataPagamento string  `json:"data_pagamento"`
 	}
-	
+
 	if err := json.Unmarshal(body, &itauResp); err != nil {
 		return nil, err
 	}
-	
+
 	return &providers.TransferResponse{
 		ProviderTxID: itauResp.IdRequisicao,
 		E2EID:        itauResp.EndToEndId,
@@ -324,21 +324,21 @@ func (p *ItauProvider) CancelTransfer(ctx context.Context, txID string) error {
 func (p *ItauProvider) CreateQRCodeStatic(ctx context.Context, req *providers.QRCodeRequest) (*providers.QRCodeResponse, error) {
 	// Endpoint: POST /sispag/v1/qrcodes/estatico
 	endpoint := fmt.Sprintf("%s/sispag/v1/qrcodes/estatico", p.baseURL)
-	
+
 	payload := map[string]interface{}{
 		"chave_pix": req.PayeePixKey,
 		"valor":     float64(req.Amount) / 100.0,
 		"descricao": req.Description,
 	}
-	
+
 	jsonData, _ := json.Marshal(payload)
 	httpReq, err := http.NewRequestWithContext(ctx, "POST", endpoint, bytes.NewBuffer(jsonData))
 	if err != nil {
 		return nil, err
 	}
-	
+
 	httpReq.Header.Set("Content-Type", "application/json")
-	
+
 	resp, err := p.httpClient.Do(httpReq)
 	if err != nil {
 		return nil, &providers.ProviderError{
@@ -349,9 +349,9 @@ func (p *ItauProvider) CreateQRCodeStatic(ctx context.Context, req *providers.QR
 		}
 	}
 	defer resp.Body.Close()
-	
+
 	body, _ := io.ReadAll(resp.Body)
-	
+
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
 		return nil, &providers.ProviderError{
 			Code:       "QRCODE_FAILED",
@@ -360,17 +360,17 @@ func (p *ItauProvider) CreateQRCodeStatic(ctx context.Context, req *providers.QR
 			Details:    map[string]interface{}{"response": string(body)},
 		}
 	}
-	
+
 	var qrResp struct {
 		IdQRCode    string `json:"id_qrcode"`
 		QRCode      string `json:"qrcode"`
 		QRCodeImage string `json:"qrcode_imagem"`
 	}
-	
+
 	if err := json.Unmarshal(body, &qrResp); err != nil {
 		return nil, err
 	}
-	
+
 	return &providers.QRCodeResponse{
 		QRCodeID:    qrResp.IdQRCode,
 		QRCode:      qrResp.QRCode,
@@ -386,23 +386,23 @@ func (p *ItauProvider) CreateQRCodeStatic(ctx context.Context, req *providers.QR
 func (p *ItauProvider) CreateQRCodeDynamic(ctx context.Context, req *providers.QRCodeRequest) (*providers.QRCodeResponse, error) {
 	// Endpoint: POST /sispag/v1/qrcodes/dinamico
 	endpoint := fmt.Sprintf("%s/sispag/v1/qrcodes/dinamico", p.baseURL)
-	
+
 	payload := map[string]interface{}{
-		"chave_pix":      req.PayeePixKey,
-		"valor":          float64(req.Amount) / 100.0,
-		"descricao":      req.Description,
-		"expiracao":      req.ExpiresIn,
+		"chave_pix":       req.PayeePixKey,
+		"valor":           float64(req.Amount) / 100.0,
+		"descricao":       req.Description,
+		"expiracao":       req.ExpiresIn,
 		"permite_alterar": req.AllowChange,
 	}
-	
+
 	jsonData, _ := json.Marshal(payload)
 	httpReq, err := http.NewRequestWithContext(ctx, "POST", endpoint, bytes.NewBuffer(jsonData))
 	if err != nil {
 		return nil, err
 	}
-	
+
 	httpReq.Header.Set("Content-Type", "application/json")
-	
+
 	resp, err := p.httpClient.Do(httpReq)
 	if err != nil {
 		return nil, &providers.ProviderError{
@@ -413,9 +413,9 @@ func (p *ItauProvider) CreateQRCodeDynamic(ctx context.Context, req *providers.Q
 		}
 	}
 	defer resp.Body.Close()
-	
+
 	body, _ := io.ReadAll(resp.Body)
-	
+
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
 		return nil, &providers.ProviderError{
 			Code:       "QRCODE_FAILED",
@@ -424,20 +424,20 @@ func (p *ItauProvider) CreateQRCodeDynamic(ctx context.Context, req *providers.Q
 			Details:    map[string]interface{}{"response": string(body)},
 		}
 	}
-	
+
 	var qrResp struct {
 		IdQRCode    string `json:"id_qrcode"`
 		QRCode      string `json:"qrcode"`
 		QRCodeImage string `json:"qrcode_imagem"`
 		Expiracao   string `json:"expiracao"`
 	}
-	
+
 	if err := json.Unmarshal(body, &qrResp); err != nil {
 		return nil, err
 	}
-	
+
 	expiresAt := time.Now().Add(time.Duration(req.ExpiresIn) * time.Second)
-	
+
 	return &providers.QRCodeResponse{
 		QRCodeID:    qrResp.IdQRCode,
 		QRCode:      qrResp.QRCode,
@@ -453,12 +453,12 @@ func (p *ItauProvider) CreateQRCodeDynamic(ctx context.Context, req *providers.Q
 
 func (p *ItauProvider) GetQRCode(ctx context.Context, qrCodeID string) (*providers.QRCodeResponse, error) {
 	endpoint := fmt.Sprintf("%s/sispag/v1/qrcodes/%s", p.baseURL, qrCodeID)
-	
+
 	req, err := http.NewRequestWithContext(ctx, "GET", endpoint, nil)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	resp, err := p.httpClient.Do(req)
 	if err != nil {
 		return nil, &providers.ProviderError{
@@ -469,9 +469,9 @@ func (p *ItauProvider) GetQRCode(ctx context.Context, qrCodeID string) (*provide
 		}
 	}
 	defer resp.Body.Close()
-	
+
 	body, _ := io.ReadAll(resp.Body)
-	
+
 	if resp.StatusCode != http.StatusOK {
 		return nil, &providers.ProviderError{
 			Code:       "QUERY_FAILED",
@@ -480,7 +480,7 @@ func (p *ItauProvider) GetQRCode(ctx context.Context, qrCodeID string) (*provide
 			Details:    map[string]interface{}{"response": string(body)},
 		}
 	}
-	
+
 	var qrResp struct {
 		IdQRCode  string  `json:"id_qrcode"`
 		QRCode    string  `json:"qrcode"`
@@ -488,11 +488,11 @@ func (p *ItauProvider) GetQRCode(ctx context.Context, qrCodeID string) (*provide
 		Valor     float64 `json:"valor"`
 		Descricao string  `json:"descricao"`
 	}
-	
+
 	if err := json.Unmarshal(body, &qrResp); err != nil {
 		return nil, err
 	}
-	
+
 	return &providers.QRCodeResponse{
 		QRCodeID:    qrResp.IdQRCode,
 		QRCode:      qrResp.QRCode,
@@ -513,17 +513,17 @@ func (p *ItauProvider) HealthCheck(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	
+
 	resp, err := p.httpClient.Do(req)
 	if err != nil {
 		return err
 	}
 	defer resp.Body.Close()
-	
+
 	if resp.StatusCode >= 500 {
 		return fmt.Errorf("provider unhealthy: status %d", resp.StatusCode)
 	}
-	
+
 	return nil
 }
 

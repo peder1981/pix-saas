@@ -84,7 +84,7 @@ func main() {
 	// providerRegistry.Register(bradesco.NewBradescoProvider())
 	// providerRegistry.Register(itau.NewItauProvider())
 	providerRegistry.Register(bb.NewBBProvider())
-	providerRegistry.Register(santander.NewSantanderProvider())
+	providerRegistry.Register(santander.NewProvider())
 	providerRegistry.Register(inter.NewInterProvider())
 
 	// Criar aplicação Fiber

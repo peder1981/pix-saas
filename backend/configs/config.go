@@ -43,9 +43,9 @@ type DatabaseConfig struct {
 
 // JWTConfig configurações JWT
 type JWTConfig struct {
-	SecretKey           string
-	AccessTokenTTL      time.Duration
-	RefreshTokenTTL     time.Duration
+	SecretKey       string
+	AccessTokenTTL  time.Duration
+	RefreshTokenTTL time.Duration
 }
 
 // EncryptionConfig configurações de criptografia
@@ -55,9 +55,9 @@ type EncryptionConfig struct {
 
 // AuditConfig configurações de auditoria
 type AuditConfig struct {
-	Enabled         bool
-	RetentionYears  int
-	AsyncLogging    bool
+	Enabled        bool
+	RetentionYears int
+	AsyncLogging   bool
 }
 
 // ProviderConfig configurações de providers
@@ -77,22 +77,22 @@ func LoadConfig(configPath string) (*Config, error) {
 	viper.AddConfigPath(configPath)
 	viper.AddConfigPath(".")
 	viper.AddConfigPath("./configs")
-	
+
 	// Configurações padrão
 	setDefaults()
-	
+
 	// Ler variáveis de ambiente
 	viper.AutomaticEnv()
-	
+
 	// Ler arquivo de configuração
 	if err := viper.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
 			return nil, fmt.Errorf("erro ao ler arquivo de configuração: %w", err)
 		}
 	}
-	
+
 	config := &Config{}
-	
+
 	// Server
 	config.Server = ServerConfig{
 		Port:            viper.GetInt("server.port"),
@@ -103,7 +103,7 @@ func LoadConfig(configPath string) (*Config, error) {
 		WriteTimeout:    viper.GetDuration("server.write_timeout"),
 		ShutdownTimeout: viper.GetDuration("server.shutdown_timeout"),
 	}
-	
+
 	// Database
 	config.Database = DatabaseConfig{
 		Host:            viper.GetString("database.host"),
@@ -116,26 +116,26 @@ func LoadConfig(configPath string) (*Config, error) {
 		MaxIdleConns:    viper.GetInt("database.max_idle_conns"),
 		ConnMaxLifetime: viper.GetDuration("database.conn_max_lifetime"),
 	}
-	
+
 	// JWT
 	config.JWT = JWTConfig{
 		SecretKey:       viper.GetString("jwt.secret_key"),
 		AccessTokenTTL:  viper.GetDuration("jwt.access_token_ttl"),
 		RefreshTokenTTL: viper.GetDuration("jwt.refresh_token_ttl"),
 	}
-	
+
 	// Encryption
 	config.Encryption = EncryptionConfig{
 		Key: viper.GetString("encryption.key"),
 	}
-	
+
 	// Audit
 	config.Audit = AuditConfig{
 		Enabled:        viper.GetBool("audit.enabled"),
 		RetentionYears: viper.GetInt("audit.retention_years"),
 		AsyncLogging:   viper.GetBool("audit.async_logging"),
 	}
-	
+
 	// Providers
 	config.Providers = make(map[string]ProviderConfig)
 	providersMap := viper.GetStringMap("providers")
@@ -150,7 +150,7 @@ func LoadConfig(configPath string) (*Config, error) {
 			RequiresMTLS: viper.GetBool(prefix + ".requires_mtls"),
 		}
 	}
-	
+
 	return config, nil
 }
 
@@ -163,7 +163,7 @@ func setDefaults() {
 	viper.SetDefault("server.read_timeout", 30*time.Second)
 	viper.SetDefault("server.write_timeout", 30*time.Second)
 	viper.SetDefault("server.shutdown_timeout", 10*time.Second)
-	
+
 	// Database defaults
 	viper.SetDefault("database.host", "localhost")
 	viper.SetDefault("database.port", 5432)
@@ -173,11 +173,11 @@ func setDefaults() {
 	viper.SetDefault("database.max_open_conns", 25)
 	viper.SetDefault("database.max_idle_conns", 5)
 	viper.SetDefault("database.conn_max_lifetime", 5*time.Minute)
-	
+
 	// JWT defaults
 	viper.SetDefault("jwt.access_token_ttl", 15*time.Minute)
 	viper.SetDefault("jwt.refresh_token_ttl", 7*24*time.Hour)
-	
+
 	// Audit defaults
 	viper.SetDefault("audit.enabled", true)
 	viper.SetDefault("audit.retention_years", 5)

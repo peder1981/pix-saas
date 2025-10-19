@@ -49,11 +49,11 @@ func (p *BradescoProvider) Initialize(config domain.ProviderConfig) error {
 	p.config = config
 	p.baseURL = config.BaseURL
 	p.authURL = config.AuthURL
-	
+
 	if config.Timeout > 0 {
 		p.httpClient.Timeout = time.Duration(config.Timeout) * time.Second
 	}
-	
+
 	return nil
 }
 
@@ -68,7 +68,7 @@ func (p *BradescoProvider) Authenticate(ctx context.Context, credentials provide
 				Details: map[string]interface{}{"error": err.Error()},
 			}
 		}
-		
+
 		p.httpClient.Transport = &http.Transport{
 			TLSClientConfig: &tls.Config{
 				Certificates: []tls.Certificate{cert},
@@ -76,22 +76,22 @@ func (p *BradescoProvider) Authenticate(ctx context.Context, credentials provide
 			},
 		}
 	}
-	
+
 	// Requisição OAuth2
 	data := map[string]string{
 		"grant_type":    "client_credentials",
 		"client_id":     credentials.ClientID,
 		"client_secret": credentials.ClientSecret,
 	}
-	
+
 	jsonData, _ := json.Marshal(data)
 	req, err := http.NewRequestWithContext(ctx, "POST", p.authURL, bytes.NewBuffer(jsonData))
 	if err != nil {
 		return nil, err
 	}
-	
+
 	req.Header.Set("Content-Type", "application/json")
-	
+
 	resp, err := p.httpClient.Do(req)
 	if err != nil {
 		return nil, &providers.ProviderError{
@@ -102,7 +102,7 @@ func (p *BradescoProvider) Authenticate(ctx context.Context, credentials provide
 		}
 	}
 	defer resp.Body.Close()
-	
+
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
 		return nil, &providers.ProviderError{
@@ -112,18 +112,18 @@ func (p *BradescoProvider) Authenticate(ctx context.Context, credentials provide
 			Details:    map[string]interface{}{"response": string(body)},
 		}
 	}
-	
+
 	var authResp struct {
 		AccessToken  string `json:"access_token"`
 		TokenType    string `json:"token_type"`
 		ExpiresIn    int    `json:"expires_in"`
 		RefreshToken string `json:"refresh_token,omitempty"`
 	}
-	
+
 	if err := json.NewDecoder(resp.Body).Decode(&authResp); err != nil {
 		return nil, err
 	}
-	
+
 	return &providers.AuthToken{
 		AccessToken:  authResp.AccessToken,
 		RefreshToken: authResp.RefreshToken,
@@ -141,14 +141,14 @@ func (p *BradescoProvider) RefreshToken(ctx context.Context, refreshToken string
 func (p *BradescoProvider) CreateTransfer(ctx context.Context, req *providers.TransferRequest) (*providers.TransferResponse, error) {
 	// Endpoint: POST /v1/spi/solicitar-transferencia
 	endpoint := fmt.Sprintf("%s/v1/spi/solicitar-transferencia", p.baseURL)
-	
+
 	// Montar payload conforme documentação Bradesco
 	payload := map[string]interface{}{
 		"idTransacao": req.ExternalID,
 		"valor":       float64(req.Amount) / 100.0, // Converter centavos para reais
 		"descricao":   req.Description,
 	}
-	
+
 	// Dados do pagador
 	pagador := make(map[string]interface{})
 	if req.PayerPixKey != "" {
@@ -163,7 +163,7 @@ func (p *BradescoProvider) CreateTransfer(ctx context.Context, req *providers.Tr
 		pagador["cpfCnpj"] = req.PayerDocument
 	}
 	payload["pagador"] = pagador
-	
+
 	// Dados do recebedor
 	recebedor := make(map[string]interface{})
 	if req.PayeePixKey != "" {
@@ -178,16 +178,16 @@ func (p *BradescoProvider) CreateTransfer(ctx context.Context, req *providers.Tr
 		recebedor["cpfCnpj"] = req.PayeeDocument
 	}
 	payload["recebedor"] = recebedor
-	
+
 	jsonData, _ := json.Marshal(payload)
 	httpReq, err := http.NewRequestWithContext(ctx, "POST", endpoint, bytes.NewBuffer(jsonData))
 	if err != nil {
 		return nil, err
 	}
-	
+
 	httpReq.Header.Set("Content-Type", "application/json")
 	// Token deve ser passado via context ou armazenado
-	
+
 	resp, err := p.httpClient.Do(httpReq)
 	if err != nil {
 		return nil, &providers.ProviderError{
@@ -198,9 +198,9 @@ func (p *BradescoProvider) CreateTransfer(ctx context.Context, req *providers.Tr
 		}
 	}
 	defer resp.Body.Close()
-	
+
 	body, _ := io.ReadAll(resp.Body)
-	
+
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
 		return nil, &providers.ProviderError{
 			Code:       "TRANSFER_FAILED",
@@ -209,23 +209,23 @@ func (p *BradescoProvider) CreateTransfer(ctx context.Context, req *providers.Tr
 			Details:    map[string]interface{}{"response": string(body)},
 		}
 	}
-	
+
 	var bradescoResp struct {
-		IdTransacao string `json:"idTransacao"`
-		EndToEndId  string `json:"endToEndId"`
-		Status      string `json:"status"`
+		IdTransacao string  `json:"idTransacao"`
+		EndToEndId  string  `json:"endToEndId"`
+		Status      string  `json:"status"`
 		Valor       float64 `json:"valor"`
-		DataHora    string `json:"dataHora"`
-		Motivo      string `json:"motivo,omitempty"`
+		DataHora    string  `json:"dataHora"`
+		Motivo      string  `json:"motivo,omitempty"`
 	}
-	
+
 	if err := json.Unmarshal(body, &bradescoResp); err != nil {
 		return nil, err
 	}
-	
+
 	// Mapear status do Bradesco para nosso status
 	status := mapBradescoStatus(bradescoResp.Status)
-	
+
 	response := &providers.TransferResponse{
 		ProviderTxID: bradescoResp.IdTransacao,
 		E2EID:        bradescoResp.EndToEndId,
@@ -234,28 +234,28 @@ func (p *BradescoProvider) CreateTransfer(ctx context.Context, req *providers.Tr
 		Description:  req.Description,
 		RawResponse:  map[string]interface{}{"bradesco": bradescoResp},
 	}
-	
+
 	if bradescoResp.Status == "REJEITADA" || bradescoResp.Status == "ERRO" {
 		response.ErrorMessage = bradescoResp.Motivo
 	}
-	
+
 	if bradescoResp.Status == "CONCLUIDA" {
 		now := time.Now()
 		response.CompletedAt = &now
 	}
-	
+
 	return response, nil
 }
 
 func (p *BradescoProvider) GetTransfer(ctx context.Context, txID string) (*providers.TransferResponse, error) {
 	// Endpoint: GET /v1/spi/consultar-transferencia/{idTransacao}
 	endpoint := fmt.Sprintf("%s/v1/spi/consultar-transferencia/%s", p.baseURL, txID)
-	
+
 	req, err := http.NewRequestWithContext(ctx, "GET", endpoint, nil)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	resp, err := p.httpClient.Do(req)
 	if err != nil {
 		return nil, &providers.ProviderError{
@@ -266,9 +266,9 @@ func (p *BradescoProvider) GetTransfer(ctx context.Context, txID string) (*provi
 		}
 	}
 	defer resp.Body.Close()
-	
+
 	body, _ := io.ReadAll(resp.Body)
-	
+
 	if resp.StatusCode != http.StatusOK {
 		return nil, &providers.ProviderError{
 			Code:       "QUERY_FAILED",
@@ -277,19 +277,19 @@ func (p *BradescoProvider) GetTransfer(ctx context.Context, txID string) (*provi
 			Details:    map[string]interface{}{"response": string(body)},
 		}
 	}
-	
+
 	var bradescoResp struct {
-		IdTransacao string `json:"idTransacao"`
-		EndToEndId  string `json:"endToEndId"`
-		Status      string `json:"status"`
+		IdTransacao string  `json:"idTransacao"`
+		EndToEndId  string  `json:"endToEndId"`
+		Status      string  `json:"status"`
 		Valor       float64 `json:"valor"`
-		DataHora    string `json:"dataHora"`
+		DataHora    string  `json:"dataHora"`
 	}
-	
+
 	if err := json.Unmarshal(body, &bradescoResp); err != nil {
 		return nil, err
 	}
-	
+
 	return &providers.TransferResponse{
 		ProviderTxID: bradescoResp.IdTransacao,
 		E2EID:        bradescoResp.EndToEndId,
@@ -328,17 +328,17 @@ func (p *BradescoProvider) HealthCheck(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	
+
 	resp, err := p.httpClient.Do(req)
 	if err != nil {
 		return err
 	}
 	defer resp.Body.Close()
-	
+
 	if resp.StatusCode >= 500 {
 		return fmt.Errorf("provider unhealthy: status %d", resp.StatusCode)
 	}
-	
+
 	return nil
 }
 

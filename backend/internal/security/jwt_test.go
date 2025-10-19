@@ -20,7 +20,7 @@ func TestNewJWTService(t *testing.T) {
 
 func TestGenerateAccessToken(t *testing.T) {
 	service := NewJWTService([]byte("test-secret"), 15*time.Minute, 7*24*time.Hour)
-	
+
 	userID := uuid.New()
 	merchantID := uuid.New()
 	email := "test@example.com"
@@ -46,7 +46,7 @@ func TestGenerateAccessToken(t *testing.T) {
 
 func TestGenerateRefreshToken(t *testing.T) {
 	service := NewJWTService([]byte("test-secret"), 15*time.Minute, 7*24*time.Hour)
-	
+
 	userID := uuid.New()
 
 	token, err := service.GenerateRefreshToken(userID)
@@ -61,7 +61,7 @@ func TestGenerateRefreshToken(t *testing.T) {
 
 func TestValidateAccessToken(t *testing.T) {
 	service := NewJWTService([]byte("test-secret"), 15*time.Minute, 7*24*time.Hour)
-	
+
 	userID := uuid.New()
 	merchantID := uuid.New()
 	email := "test@example.com"
@@ -94,7 +94,7 @@ func TestValidateAccessToken(t *testing.T) {
 
 func TestValidateRefreshToken(t *testing.T) {
 	service := NewJWTService([]byte("test-secret"), 15*time.Minute, 7*24*time.Hour)
-	
+
 	userID := uuid.New()
 
 	// Generate token

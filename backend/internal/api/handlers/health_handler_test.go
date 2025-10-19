@@ -11,11 +11,11 @@ import (
 func TestHealthCheck(t *testing.T) {
 	// Criar app Fiber
 	app := fiber.New()
-	
+
 	// Registrar rota
 	app.Get("/health", func(c *fiber.Ctx) error {
 		return c.JSON(fiber.Map{
-			"status": "ok",
+			"status":  "ok",
 			"service": "pix-saas-api",
 		})
 	})
@@ -38,11 +38,11 @@ func TestHealthCheck(t *testing.T) {
 func TestReadiness(t *testing.T) {
 	// Criar app Fiber
 	app := fiber.New()
-	
+
 	// Registrar rota
 	app.Get("/ready", func(c *fiber.Ctx) error {
 		return c.JSON(fiber.Map{
-			"status": "ready",
+			"status":   "ready",
 			"database": "connected",
 		})
 	})

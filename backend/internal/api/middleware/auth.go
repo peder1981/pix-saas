@@ -17,27 +17,27 @@ func AuthMiddleware(jwtService *security.JWTService) fiber.Handler {
 				"error": "missing authorization header",
 			})
 		}
-		
+
 		token, err := security.ExtractTokenFromHeader(authHeader)
 		if err != nil {
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 				"error": "invalid authorization header",
 			})
 		}
-		
+
 		claims, err := jwtService.ValidateToken(token)
 		if err != nil {
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 				"error": "invalid or expired token",
 			})
 		}
-		
+
 		// Armazenar claims no contexto
 		c.Locals("user_id", claims.UserID)
 		c.Locals("merchant_id", claims.MerchantID)
 		c.Locals("email", claims.Email)
 		c.Locals("role", claims.Role)
-		
+
 		return c.Next()
 	}
 }
@@ -51,7 +51,7 @@ func APIKeyMiddleware() fiber.Handler {
 				"error": "missing API key",
 			})
 		}
-		
+
 		// TODO: Validar API key no banco de dados
 		// Por enquanto, apenas verificar se existe
 		if !strings.HasPrefix(apiKey, "pk_") && !strings.HasPrefix(apiKey, "sk_") {
@@ -59,10 +59,10 @@ func APIKeyMiddleware() fiber.Handler {
 				"error": "invalid API key format",
 			})
 		}
-		
+
 		// Armazenar merchant_id no contexto após validação
 		// c.Locals("merchant_id", merchantID)
-		
+
 		return c.Next()
 	}
 }
@@ -76,13 +76,13 @@ func RequireRole(allowedRoles ...string) fiber.Handler {
 				"error": "role not found in context",
 			})
 		}
-		
+
 		for _, allowedRole := range allowedRoles {
 			if role == allowedRole {
 				return c.Next()
 			}
 		}
-		
+
 		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
 			"error": "insufficient permissions",
 		})
@@ -98,7 +98,7 @@ func RequireMerchant() fiber.Handler {
 				"error": "merchant context required",
 			})
 		}
-		
+
 		return c.Next()
 	}
 }

@@ -40,33 +40,33 @@ func (p *InterProvider) Initialize(config providers.ProviderConfig) error {
 // Authenticate realiza autenticação OAuth2
 func (p *InterProvider) Authenticate(ctx context.Context, credentials providers.ProviderCredentials) (*providers.AuthToken, error) {
 	authURL := p.config.AuthURL
-	
+
 	payload := map[string]string{
 		"client_id":     credentials.ClientID,
 		"client_secret": credentials.ClientSecret,
 		"scope":         "extrato.read boleto-cobranca.read boleto-cobranca.write pagamento-pix.write pagamento-pix.read",
 		"grant_type":    "client_credentials",
 	}
-	
+
 	headers := map[string]string{
 		"Content-Type": "application/x-www-form-urlencoded",
 	}
-	
+
 	resp, err := p.httpClient.PostForm(ctx, authURL, payload, headers)
 	if err != nil {
 		return nil, providers.NewProviderError("AUTH_FAILED", "Falha na autenticação", err)
 	}
-	
+
 	var authResp struct {
 		AccessToken string `json:"access_token"`
 		TokenType   string `json:"token_type"`
 		ExpiresIn   int    `json:"expires_in"`
 	}
-	
+
 	if err := json.Unmarshal(resp, &authResp); err != nil {
 		return nil, providers.NewProviderError("PARSE_ERROR", "Erro ao processar resposta", err)
 	}
-	
+
 	return &providers.AuthToken{
 		AccessToken: authResp.AccessToken,
 		TokenType:   authResp.TokenType,
@@ -83,37 +83,37 @@ func (p *InterProvider) RefreshToken(ctx context.Context, refreshToken string) (
 // CreateTransfer cria uma transferência PIX
 func (p *InterProvider) CreateTransfer(ctx context.Context, req *providers.TransferRequest) (*providers.TransferResponse, error) {
 	url := fmt.Sprintf("%s/banking/v2/pix", p.config.BaseURL)
-	
+
 	payload := map[string]interface{}{
 		"valor": float64(req.Amount) / 100,
 		"destinatario": map[string]interface{}{
-			"nome":      req.PayeeName,
-			"cpfCnpj":   req.PayeeDocument,
-			"chave":     req.PayeePixKey,
+			"nome":    req.PayeeName,
+			"cpfCnpj": req.PayeeDocument,
+			"chave":   req.PayeePixKey,
 		},
 		"descricao": req.Description,
 	}
-	
+
 	headers := map[string]string{
 		"Content-Type":  "application/json",
 		"Authorization": fmt.Sprintf("Bearer %s", req.AuthToken),
 	}
-	
+
 	resp, err := p.httpClient.Post(ctx, url, payload, headers)
 	if err != nil {
 		return nil, providers.NewProviderError("TRANSFER_FAILED", "Falha ao criar transferência", err)
 	}
-	
+
 	var interResp struct {
 		CodigoSolicitacao string `json:"codigoSolicitacao"`
 		EndToEndId        string `json:"endToEndId"`
 		Status            string `json:"status"`
 	}
-	
+
 	if err := json.Unmarshal(resp, &interResp); err != nil {
 		return nil, providers.NewProviderError("PARSE_ERROR", "Erro ao processar resposta", err)
 	}
-	
+
 	return &providers.TransferResponse{
 		ProviderTxID: interResp.CodigoSolicitacao,
 		E2EID:        interResp.EndToEndId,
@@ -125,26 +125,26 @@ func (p *InterProvider) CreateTransfer(ctx context.Context, req *providers.Trans
 // GetTransfer consulta uma transferência
 func (p *InterProvider) GetTransfer(ctx context.Context, req *providers.GetTransferRequest) (*providers.TransferResponse, error) {
 	url := fmt.Sprintf("%s/banking/v2/pix/%s", p.config.BaseURL, req.ProviderTxID)
-	
+
 	headers := map[string]string{
 		"Authorization": fmt.Sprintf("Bearer %s", req.AuthToken),
 	}
-	
+
 	resp, err := p.httpClient.Get(ctx, url, headers)
 	if err != nil {
 		return nil, providers.NewProviderError("GET_FAILED", "Falha ao consultar transferência", err)
 	}
-	
+
 	var interResp struct {
 		CodigoSolicitacao string `json:"codigoSolicitacao"`
 		EndToEndId        string `json:"endToEndId"`
 		Status            string `json:"status"`
 	}
-	
+
 	if err := json.Unmarshal(resp, &interResp); err != nil {
 		return nil, providers.NewProviderError("PARSE_ERROR", "Erro ao processar resposta", err)
 	}
-	
+
 	return &providers.TransferResponse{
 		ProviderTxID: interResp.CodigoSolicitacao,
 		E2EID:        interResp.EndToEndId,
@@ -160,32 +160,32 @@ func (p *InterProvider) CancelTransfer(ctx context.Context, req *providers.Cance
 // CreateQRCodeStatic cria um QR Code estático
 func (p *InterProvider) CreateQRCodeStatic(ctx context.Context, req *providers.QRCodeRequest) (*providers.QRCodeResponse, error) {
 	url := fmt.Sprintf("%s/banking/v2/pix/qrcode-estatico", p.config.BaseURL)
-	
+
 	payload := map[string]interface{}{
-		"valor": float64(req.Amount) / 100,
-		"chave": req.PixKey,
+		"valor":              float64(req.Amount) / 100,
+		"chave":              req.PixKey,
 		"solicitacaoPagador": req.Description,
 	}
-	
+
 	headers := map[string]string{
 		"Content-Type":  "application/json",
 		"Authorization": fmt.Sprintf("Bearer %s", req.AuthToken),
 	}
-	
+
 	resp, err := p.httpClient.Post(ctx, url, payload, headers)
 	if err != nil {
 		return nil, providers.NewProviderError("QRCODE_FAILED", "Falha ao gerar QR Code", err)
 	}
-	
+
 	var qrResp struct {
-		TxId       string `json:"txid"`
+		TxId          string `json:"txid"`
 		PixCopiaECola string `json:"pixCopiaECola"`
 	}
-	
+
 	if err := json.Unmarshal(resp, &qrResp); err != nil {
 		return nil, providers.NewProviderError("PARSE_ERROR", "Erro ao processar resposta", err)
 	}
-	
+
 	return &providers.QRCodeResponse{
 		QRCodeID: qrResp.TxId,
 		QRCode:   qrResp.PixCopiaECola,
@@ -195,34 +195,34 @@ func (p *InterProvider) CreateQRCodeStatic(ctx context.Context, req *providers.Q
 // CreateQRCodeDynamic cria um QR Code dinâmico
 func (p *InterProvider) CreateQRCodeDynamic(ctx context.Context, req *providers.QRCodeRequest) (*providers.QRCodeResponse, error) {
 	url := fmt.Sprintf("%s/banking/v2/pix/qrcode-dinamico", p.config.BaseURL)
-	
+
 	payload := map[string]interface{}{
 		"valor": map[string]interface{}{
 			"original": float64(req.Amount) / 100,
 		},
-		"chave": req.PixKey,
+		"chave":              req.PixKey,
 		"solicitacaoPagador": req.Description,
 	}
-	
+
 	headers := map[string]string{
 		"Content-Type":  "application/json",
 		"Authorization": fmt.Sprintf("Bearer %s", req.AuthToken),
 	}
-	
+
 	resp, err := p.httpClient.Post(ctx, url, payload, headers)
 	if err != nil {
 		return nil, providers.NewProviderError("QRCODE_FAILED", "Falha ao gerar QR Code", err)
 	}
-	
+
 	var qrResp struct {
-		TxId       string `json:"txid"`
+		TxId          string `json:"txid"`
 		PixCopiaECola string `json:"pixCopiaECola"`
 	}
-	
+
 	if err := json.Unmarshal(resp, &qrResp); err != nil {
 		return nil, providers.NewProviderError("PARSE_ERROR", "Erro ao processar resposta", err)
 	}
-	
+
 	return &providers.QRCodeResponse{
 		QRCodeID: qrResp.TxId,
 		QRCode:   qrResp.PixCopiaECola,
@@ -232,26 +232,26 @@ func (p *InterProvider) CreateQRCodeDynamic(ctx context.Context, req *providers.
 // GetQRCode consulta um QR Code
 func (p *InterProvider) GetQRCode(ctx context.Context, req *providers.GetQRCodeRequest) (*providers.QRCodeResponse, error) {
 	url := fmt.Sprintf("%s/banking/v2/pix/qrcode/%s", p.config.BaseURL, req.QRCodeID)
-	
+
 	headers := map[string]string{
 		"Authorization": fmt.Sprintf("Bearer %s", req.AuthToken),
 	}
-	
+
 	resp, err := p.httpClient.Get(ctx, url, headers)
 	if err != nil {
 		return nil, providers.NewProviderError("GET_FAILED", "Falha ao consultar QR Code", err)
 	}
-	
+
 	var qrResp struct {
-		TxId       string `json:"txid"`
+		TxId          string `json:"txid"`
 		PixCopiaECola string `json:"pixCopiaECola"`
-		Status     string `json:"status"`
+		Status        string `json:"status"`
 	}
-	
+
 	if err := json.Unmarshal(resp, &qrResp); err != nil {
 		return nil, providers.NewProviderError("PARSE_ERROR", "Erro ao processar resposta", err)
 	}
-	
+
 	return &providers.QRCodeResponse{
 		QRCodeID: qrResp.TxId,
 		QRCode:   qrResp.PixCopiaECola,

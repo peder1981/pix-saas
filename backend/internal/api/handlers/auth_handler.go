@@ -64,7 +64,7 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 			"error": "invalid request body",
 		})
 	}
-	
+
 	// Buscar usuário
 	user, err := h.userRepo.GetByEmail(c.Context(), req.Email)
 	if err != nil {
@@ -73,7 +73,7 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 			"error": "invalid credentials",
 		})
 	}
-	
+
 	// Verificar se usuário está ativo
 	if !user.Active {
 		_ = h.auditService.LogAuthentication(c.Context(), req.Email, c.IP(), false, "user inactive")
@@ -81,7 +81,7 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 			"error": "user is inactive",
 		})
 	}
-	
+
 	// Verificar senha
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password)); err != nil {
 		_ = h.auditService.LogAuthentication(c.Context(), req.Email, c.IP(), false, "invalid password")
@@ -89,7 +89,7 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 			"error": "invalid credentials",
 		})
 	}
-	
+
 	// Gerar tokens
 	tokenPair, err := h.jwtService.GenerateTokenPair(user.ID, user.MerchantID, user.Email, string(user.Role))
 	if err != nil {
@@ -97,7 +97,7 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 			"error": "failed to generate tokens",
 		})
 	}
-	
+
 	// Atualizar last_login
 	now := time.Now()
 	user.LastLogin = &now
@@ -105,13 +105,13 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 		// Log error but don't fail the login
 		log.Printf("Warning: Failed to update last_login: %v", err)
 	}
-	
+
 	// Salvar refresh token no banco
 	// TODO: Implementar salvamento de refresh token
-	
+
 	// Log de sucesso
 	_ = h.auditService.LogAuthentication(c.Context(), req.Email, c.IP(), true, "")
-	
+
 	return c.JSON(LoginResponse{
 		AccessToken:  tokenPair.AccessToken,
 		RefreshToken: tokenPair.RefreshToken,
@@ -141,7 +141,7 @@ func (h *AuthHandler) RefreshToken(c *fiber.Ctx) error {
 			"error": "invalid request body",
 		})
 	}
-	
+
 	// Validar refresh token
 	userID, err := h.jwtService.ValidateRefreshToken(req.RefreshToken)
 	if err != nil {
@@ -149,7 +149,7 @@ func (h *AuthHandler) RefreshToken(c *fiber.Ctx) error {
 			"error": "invalid refresh token",
 		})
 	}
-	
+
 	// Buscar usuário
 	user, err := h.userRepo.GetByID(c.Context(), userID)
 	if err != nil {
@@ -157,14 +157,14 @@ func (h *AuthHandler) RefreshToken(c *fiber.Ctx) error {
 			"error": "user not found",
 		})
 	}
-	
+
 	// Verificar se usuário está ativo
 	if !user.Active {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 			"error": "user is inactive",
 		})
 	}
-	
+
 	// Gerar novos tokens
 	tokenPair, err := h.jwtService.GenerateTokenPair(user.ID, user.MerchantID, user.Email, string(user.Role))
 	if err != nil {
@@ -172,7 +172,7 @@ func (h *AuthHandler) RefreshToken(c *fiber.Ctx) error {
 			"error": "failed to generate tokens",
 		})
 	}
-	
+
 	return c.JSON(LoginResponse{
 		AccessToken:  tokenPair.AccessToken,
 		RefreshToken: tokenPair.RefreshToken,
@@ -205,14 +205,14 @@ func (h *AuthHandler) Me(c *fiber.Ctx) error {
 			"error": "user not authenticated",
 		})
 	}
-	
+
 	user, err := h.userRepo.GetByID(c.Context(), userID)
 	if err != nil {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
 			"error": "user not found",
 		})
 	}
-	
+
 	return c.JSON(UserInfo{
 		ID:         user.ID,
 		Email:      user.Email,

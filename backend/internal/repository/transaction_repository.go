@@ -91,7 +91,7 @@ func (r *TransactionRepository) UpdateStatus(ctx context.Context, id uuid.UUID, 
 		"status":     status,
 		"updated_at": time.Now(),
 	}
-	
+
 	if status == domain.TransactionStatusProcessing {
 		updates["processed_at"] = time.Now()
 	} else if status == domain.TransactionStatusCompleted {
@@ -99,7 +99,7 @@ func (r *TransactionRepository) UpdateStatus(ctx context.Context, id uuid.UUID, 
 	} else if status == domain.TransactionStatusCancelled {
 		updates["cancelled_at"] = time.Now()
 	}
-	
+
 	return r.db.WithContext(ctx).Model(&domain.Transaction{}).Where("id = ?", id).Updates(updates).Error
 }
 
@@ -107,39 +107,39 @@ func (r *TransactionRepository) UpdateStatus(ctx context.Context, id uuid.UUID, 
 func (r *TransactionRepository) ListByMerchant(ctx context.Context, merchantID uuid.UUID, filters map[string]interface{}, limit, offset int) ([]domain.Transaction, int64, error) {
 	var transactions []domain.Transaction
 	var total int64
-	
+
 	query := r.db.WithContext(ctx).Model(&domain.Transaction{}).Where("merchant_id = ?", merchantID)
-	
+
 	// Aplicar filtros
 	if status, ok := filters["status"].(domain.TransactionStatus); ok {
 		query = query.Where("status = ?", status)
 	}
-	
+
 	if txType, ok := filters["type"].(domain.TransactionType); ok {
 		query = query.Where("type = ?", txType)
 	}
-	
+
 	if startDate, ok := filters["start_date"].(time.Time); ok {
 		query = query.Where("created_at >= ?", startDate)
 	}
-	
+
 	if endDate, ok := filters["end_date"].(time.Time); ok {
 		query = query.Where("created_at <= ?", endDate)
 	}
-	
+
 	if minAmount, ok := filters["min_amount"].(int64); ok {
 		query = query.Where("amount >= ?", minAmount)
 	}
-	
+
 	if maxAmount, ok := filters["max_amount"].(int64); ok {
 		query = query.Where("amount <= ?", maxAmount)
 	}
-	
+
 	// Contar total
 	if err := query.Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
-	
+
 	// Buscar transações
 	err := query.
 		Preload("Provider").
@@ -147,22 +147,22 @@ func (r *TransactionRepository) ListByMerchant(ctx context.Context, merchantID u
 		Limit(limit).
 		Offset(offset).
 		Find(&transactions).Error
-	
+
 	return transactions, total, err
 }
 
 // GetStatistics retorna estatísticas de transações
 func (r *TransactionRepository) GetStatistics(ctx context.Context, merchantID uuid.UUID, startDate, endDate time.Time) (map[string]interface{}, error) {
 	stats := make(map[string]interface{})
-	
+
 	baseQuery := r.db.WithContext(ctx).Model(&domain.Transaction{}).
 		Where("merchant_id = ? AND created_at BETWEEN ? AND ?", merchantID, startDate, endDate)
-	
+
 	// Total de transações
 	var total int64
 	baseQuery.Count(&total)
 	stats["total"] = total
-	
+
 	// Total por status
 	var statusStats []struct {
 		Status domain.TransactionStatus
@@ -173,7 +173,7 @@ func (r *TransactionRepository) GetStatistics(ctx context.Context, merchantID uu
 		Group("status").
 		Scan(&statusStats)
 	stats["by_status"] = statusStats
-	
+
 	// Total por tipo
 	var typeStats []struct {
 		Type   domain.TransactionType
@@ -184,14 +184,14 @@ func (r *TransactionRepository) GetStatistics(ctx context.Context, merchantID uu
 		Group("type").
 		Scan(&typeStats)
 	stats["by_type"] = typeStats
-	
+
 	// Volume total
 	var totalAmount int64
 	baseQuery.Where("status = ?", domain.TransactionStatusCompleted).
 		Select("COALESCE(SUM(amount), 0)").
 		Scan(&totalAmount)
 	stats["total_amount"] = totalAmount
-	
+
 	// Taxa de sucesso
 	var successCount int64
 	baseQuery.Where("status = ?", domain.TransactionStatusCompleted).Count(&successCount)
@@ -200,7 +200,7 @@ func (r *TransactionRepository) GetStatistics(ctx context.Context, merchantID uu
 		successRate = float64(successCount) / float64(total) * 100
 	}
 	stats["success_rate"] = successRate
-	
+
 	return stats, nil
 }
 
@@ -217,7 +217,7 @@ func (r *TransactionRepository) GetPendingTransactions(ctx context.Context, limi
 		Order("created_at ASC").
 		Limit(limit).
 		Find(&transactions).Error
-	
+
 	return transactions, err
 }
 
@@ -225,7 +225,7 @@ func (r *TransactionRepository) GetPendingTransactions(ctx context.Context, limi
 func (r *TransactionRepository) GetExpiredQRCodes(ctx context.Context) ([]domain.Transaction, error) {
 	var transactions []domain.Transaction
 	now := time.Now()
-	
+
 	err := r.db.WithContext(ctx).
 		Where("type IN ? AND qr_code_expires_at < ? AND status = ?",
 			[]domain.TransactionType{
@@ -236,6 +236,6 @@ func (r *TransactionRepository) GetExpiredQRCodes(ctx context.Context) ([]domain
 			domain.TransactionStatusPending,
 		).
 		Find(&transactions).Error
-	
+
 	return transactions, err
 }

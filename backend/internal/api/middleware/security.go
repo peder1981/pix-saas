@@ -10,13 +10,13 @@ import (
 // SecurityHeaders adiciona headers de segurança
 func SecurityHeaders() fiber.Handler {
 	return helmet.New(helmet.Config{
-		XSSProtection:             "1; mode=block",
-		ContentTypeNosniff:        "nosniff",
-		XFrameOptions:             "DENY",
-		HSTSMaxAge:                31536000,
-		HSTSExcludeSubdomains:     false,
-		ContentSecurityPolicy:     "default-src 'self'",
-		ReferrerPolicy:            "no-referrer",
+		XSSProtection:         "1; mode=block",
+		ContentTypeNosniff:    "nosniff",
+		XFrameOptions:         "DENY",
+		HSTSMaxAge:            31536000,
+		HSTSExcludeSubdomains: false,
+		ContentSecurityPolicy: "default-src 'self'",
+		ReferrerPolicy:        "no-referrer",
 	})
 }
 
@@ -42,7 +42,7 @@ func joinOrigins(origins []string) string {
 	if len(origins) == 0 {
 		return "*"
 	}
-	
+
 	result := origins[0]
 	for i := 1; i < len(origins); i++ {
 		result += "," + origins[i]

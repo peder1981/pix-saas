@@ -40,16 +40,16 @@ func (p *BBProvider) Initialize(config providers.ProviderConfig) error {
 // Authenticate realiza autenticação OAuth2 com o Banco do Brasil
 func (p *BBProvider) Authenticate(ctx context.Context, credentials providers.ProviderCredentials) (*providers.AuthToken, error) {
 	authURL := p.config.AuthURL
-	
+
 	payload := map[string]string{
 		"grant_type": "client_credentials",
 		"scope":      "cob.write cob.read pix.write pix.read",
 	}
-	
+
 	headers := map[string]string{
 		"Content-Type": "application/x-www-form-urlencoded",
 	}
-	
+
 	// Basic Auth com client_id e client_secret
 	resp, err := p.httpClient.PostFormWithBasicAuth(
 		ctx,
@@ -62,17 +62,17 @@ func (p *BBProvider) Authenticate(ctx context.Context, credentials providers.Pro
 	if err != nil {
 		return nil, providers.NewProviderError("AUTH_FAILED", "Falha na autenticação", err)
 	}
-	
+
 	var authResp struct {
 		AccessToken string `json:"access_token"`
 		TokenType   string `json:"token_type"`
 		ExpiresIn   int    `json:"expires_in"`
 	}
-	
+
 	if err := json.Unmarshal(resp, &authResp); err != nil {
 		return nil, providers.NewProviderError("PARSE_ERROR", "Erro ao processar resposta de autenticação", err)
 	}
-	
+
 	return &providers.AuthToken{
 		AccessToken: authResp.AccessToken,
 		TokenType:   authResp.TokenType,
@@ -89,14 +89,14 @@ func (p *BBProvider) RefreshToken(ctx context.Context, refreshToken string) (*pr
 // CreateTransfer cria uma transferência PIX
 func (p *BBProvider) CreateTransfer(ctx context.Context, req *providers.TransferRequest) (*providers.TransferResponse, error) {
 	url := fmt.Sprintf("%s/pix/v1/pix", p.config.BaseURL)
-	
+
 	payload := map[string]interface{}{
-		"valor": fmt.Sprintf("%.2f", float64(req.Amount)/100),
-		"chave": req.PayeePixKey,
+		"valor":     fmt.Sprintf("%.2f", float64(req.Amount)/100),
+		"chave":     req.PayeePixKey,
 		"descricao": req.Description,
-		"txid": req.ExternalID,
+		"txid":      req.ExternalID,
 	}
-	
+
 	// Se não tiver chave PIX, usar dados bancários
 	if req.PayeePixKey == "" {
 		payload["favorecido"] = map[string]interface{}{
@@ -108,28 +108,28 @@ func (p *BBProvider) CreateTransfer(ctx context.Context, req *providers.Transfer
 			"tipoConta": mapAccountType(req.PayeeAccountType),
 		}
 	}
-	
+
 	headers := map[string]string{
 		"Content-Type":  "application/json",
 		"Authorization": fmt.Sprintf("Bearer %s", req.AuthToken),
 	}
-	
+
 	resp, err := p.httpClient.Post(ctx, url, payload, headers)
 	if err != nil {
 		return nil, providers.NewProviderError("TRANSFER_FAILED", "Falha ao criar transferência", err)
 	}
-	
+
 	var bbResp struct {
 		EndToEndId string `json:"endToEndId"`
 		TxId       string `json:"txid"`
 		Status     string `json:"status"`
 		Valor      string `json:"valor"`
 	}
-	
+
 	if err := json.Unmarshal(resp, &bbResp); err != nil {
 		return nil, providers.NewProviderError("PARSE_ERROR", "Erro ao processar resposta", err)
 	}
-	
+
 	return &providers.TransferResponse{
 		ProviderTxID: bbResp.TxId,
 		E2EID:        bbResp.EndToEndId,
@@ -141,27 +141,27 @@ func (p *BBProvider) CreateTransfer(ctx context.Context, req *providers.Transfer
 // GetTransfer consulta uma transferência
 func (p *BBProvider) GetTransfer(ctx context.Context, req *providers.GetTransferRequest) (*providers.TransferResponse, error) {
 	url := fmt.Sprintf("%s/pix/v1/pix/%s", p.config.BaseURL, req.ProviderTxID)
-	
+
 	headers := map[string]string{
 		"Authorization": fmt.Sprintf("Bearer %s", req.AuthToken),
 	}
-	
+
 	resp, err := p.httpClient.Get(ctx, url, headers)
 	if err != nil {
 		return nil, providers.NewProviderError("GET_FAILED", "Falha ao consultar transferência", err)
 	}
-	
+
 	var bbResp struct {
 		EndToEndId string `json:"endToEndId"`
 		TxId       string `json:"txid"`
 		Status     string `json:"status"`
 		Valor      string `json:"valor"`
 	}
-	
+
 	if err := json.Unmarshal(resp, &bbResp); err != nil {
 		return nil, providers.NewProviderError("PARSE_ERROR", "Erro ao processar resposta", err)
 	}
-	
+
 	return &providers.TransferResponse{
 		ProviderTxID: bbResp.TxId,
 		E2EID:        bbResp.EndToEndId,
@@ -177,35 +177,35 @@ func (p *BBProvider) CancelTransfer(ctx context.Context, req *providers.CancelTr
 // CreateQRCodeStatic cria um QR Code estático
 func (p *BBProvider) CreateQRCodeStatic(ctx context.Context, req *providers.QRCodeRequest) (*providers.QRCodeResponse, error) {
 	url := fmt.Sprintf("%s/pix/v1/cobqrcode", p.config.BaseURL)
-	
+
 	payload := map[string]interface{}{
 		"valor": map[string]interface{}{
 			"original": fmt.Sprintf("%.2f", float64(req.Amount)/100),
 		},
-		"chave": req.PixKey,
+		"chave":              req.PixKey,
 		"solicitacaoPagador": req.Description,
 	}
-	
+
 	headers := map[string]string{
 		"Content-Type":  "application/json",
 		"Authorization": fmt.Sprintf("Bearer %s", req.AuthToken),
 	}
-	
+
 	resp, err := p.httpClient.Post(ctx, url, payload, headers)
 	if err != nil {
 		return nil, providers.NewProviderError("QRCODE_FAILED", "Falha ao gerar QR Code", err)
 	}
-	
+
 	var bbResp struct {
-		TxId      string `json:"txid"`
-		QRCode    string `json:"qrcode"`
+		TxId         string `json:"txid"`
+		QRCode       string `json:"qrcode"`
 		ImagemQRCode string `json:"imagemQrcode"`
 	}
-	
+
 	if err := json.Unmarshal(resp, &bbResp); err != nil {
 		return nil, providers.NewProviderError("PARSE_ERROR", "Erro ao processar resposta", err)
 	}
-	
+
 	return &providers.QRCodeResponse{
 		QRCodeID:    bbResp.TxId,
 		QRCode:      bbResp.QRCode,
@@ -221,27 +221,27 @@ func (p *BBProvider) CreateQRCodeDynamic(ctx context.Context, req *providers.QRC
 // GetQRCode consulta um QR Code
 func (p *BBProvider) GetQRCode(ctx context.Context, req *providers.GetQRCodeRequest) (*providers.QRCodeResponse, error) {
 	url := fmt.Sprintf("%s/pix/v1/cobqrcode/%s", p.config.BaseURL, req.QRCodeID)
-	
+
 	headers := map[string]string{
 		"Authorization": fmt.Sprintf("Bearer %s", req.AuthToken),
 	}
-	
+
 	resp, err := p.httpClient.Get(ctx, url, headers)
 	if err != nil {
 		return nil, providers.NewProviderError("GET_FAILED", "Falha ao consultar QR Code", err)
 	}
-	
+
 	var bbResp struct {
-		TxId      string `json:"txid"`
-		QRCode    string `json:"qrcode"`
+		TxId         string `json:"txid"`
+		QRCode       string `json:"qrcode"`
 		ImagemQRCode string `json:"imagemQrcode"`
-		Status    string `json:"status"`
+		Status       string `json:"status"`
 	}
-	
+
 	if err := json.Unmarshal(resp, &bbResp); err != nil {
 		return nil, providers.NewProviderError("PARSE_ERROR", "Erro ao processar resposta", err)
 	}
-	
+
 	return &providers.QRCodeResponse{
 		QRCodeID:    bbResp.TxId,
 		QRCode:      bbResp.QRCode,
@@ -258,12 +258,12 @@ func (p *BBProvider) ValidatePixKey(ctx context.Context, req *providers.Validate
 // HealthCheck verifica a saúde do provider
 func (p *BBProvider) HealthCheck(ctx context.Context) error {
 	url := fmt.Sprintf("%s/pix/v1/health", p.config.BaseURL)
-	
+
 	_, err := p.httpClient.Get(ctx, url, nil)
 	if err != nil {
 		return providers.NewProviderError("HEALTH_CHECK_FAILED", "Provider indisponível", err)
 	}
-	
+
 	return nil
 }
 

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -19,43 +20,43 @@ import (
 type PixProvider interface {
 	// GetCode retorna o código único do provider (bradesco, itau, bb, etc)
 	GetCode() string
-	
+
 	// GetName retorna o nome do provider
 	GetName() string
-	
+
 	// Initialize inicializa o provider com as configurações
 	Initialize(config ProviderConfig) error
-	
+
 	// Authenticate realiza autenticação e obtém token de acesso
 	Authenticate(ctx context.Context, credentials ProviderCredentials) (*AuthToken, error)
-	
+
 	// RefreshToken renova o token de acesso
 	RefreshToken(ctx context.Context, refreshToken string) (*AuthToken, error)
-	
+
 	// CreateTransfer cria uma transferência PIX
 	CreateTransfer(ctx context.Context, req *TransferRequest) (*TransferResponse, error)
-	
+
 	// GetTransfer consulta uma transferência PIX
 	GetTransfer(ctx context.Context, req *GetTransferRequest) (*TransferResponse, error)
-	
+
 	// CancelTransfer cancela uma transferência PIX (se suportado)
 	CancelTransfer(ctx context.Context, req *CancelTransferRequest) error
-	
+
 	// CreateQRCodeStatic cria um QR Code estático
 	CreateQRCodeStatic(ctx context.Context, req *QRCodeRequest) (*QRCodeResponse, error)
-	
+
 	// CreateQRCodeDynamic cria um QR Code dinâmico
 	CreateQRCodeDynamic(ctx context.Context, req *QRCodeRequest) (*QRCodeResponse, error)
-	
+
 	// GetQRCode consulta informações de um QR Code
 	GetQRCode(ctx context.Context, req *GetQRCodeRequest) (*QRCodeResponse, error)
-	
+
 	// ValidatePixKey valida se uma chave PIX existe e retorna informações
 	ValidatePixKey(ctx context.Context, req *ValidatePixKeyRequest) (*ValidatePixKeyResponse, error)
-	
+
 	// HealthCheck verifica se o provider está saudável
 	HealthCheck(ctx context.Context) error
-	
+
 	// GetSupportedMethods retorna os métodos suportados pelo provider
 	GetSupportedMethods() []string
 }
@@ -72,15 +73,15 @@ type ProviderConfig struct {
 
 // ProviderCredentials representa as credenciais de autenticação
 type ProviderCredentials struct {
-	ClientID       string
-	ClientSecret   string
-	Certificate    []byte // Certificado mTLS
-	PrivateKey     []byte // Chave privada mTLS
-	AccountAgency  string
-	AccountNumber  string
-	AccountType    string
-	PixKey         string
-	PixKeyType     domain.PixKeyType
+	ClientID      string
+	ClientSecret  string
+	Certificate   []byte // Certificado mTLS
+	PrivateKey    []byte // Chave privada mTLS
+	AccountAgency string
+	AccountNumber string
+	AccountType   string
+	PixKey        string
+	PixKeyType    domain.PixKeyType
 }
 
 // AuthToken representa um token de autenticação
@@ -88,7 +89,7 @@ type AuthToken struct {
 	AccessToken  string
 	RefreshToken string
 	TokenType    string
-	ExpiresIn    int       // Segundos
+	ExpiresIn    int // Segundos
 	ExpiresAt    time.Time
 	Scope        string
 }
@@ -98,7 +99,7 @@ type TransferRequest struct {
 	ExternalID  string // ID do merchant
 	Amount      int64  // Centavos
 	Description string
-	
+
 	// Pagador
 	PayerName          string
 	PayerDocument      string
@@ -108,7 +109,7 @@ type TransferRequest struct {
 	PayerAccountNumber string
 	PayerAccountType   string
 	PayerBank          string
-	
+
 	// Recebedor
 	PayeeName          string
 	PayeeDocument      string
@@ -119,10 +120,10 @@ type TransferRequest struct {
 	PayeeAccountType   string
 	PayeeBank          string
 	PayeeISPB          string
-	
+
 	// Metadata adicional
 	Metadata map[string]interface{}
-	
+
 	// Auth token
 	AuthToken string
 	ClientID  string
@@ -177,7 +178,7 @@ type TransferResponse struct {
 	Status       domain.TransactionStatus
 	Amount       int64
 	Description  string
-	
+
 	// Informações do pagador
 	PayerName          string
 	PayerDocument      string
@@ -186,7 +187,7 @@ type TransferResponse struct {
 	PayerAccountAgency string
 	PayerAccountNumber string
 	PayerBank          string
-	
+
 	// Informações do recebedor
 	PayeeName          string
 	PayeeDocument      string
@@ -195,47 +196,47 @@ type TransferResponse struct {
 	PayeeAccountAgency string
 	PayeeAccountNumber string
 	PayeeBank          string
-	
+
 	// Timestamps
 	ProcessedAt *time.Time
 	CompletedAt *time.Time
-	
+
 	// Erro (se houver)
 	ErrorCode    string
 	ErrorMessage string
-	
+
 	// Dados brutos do provider
 	RawResponse map[string]interface{}
 }
 
 // QRCodeRequest representa uma requisição de criação de QR Code
 type QRCodeRequest struct {
-	ExternalID       string
-	Amount           int64 // Centavos (0 para QR Code estático sem valor)
-	Description      string
-	PayeeName        string
-	PayeeDocument    string
-	PixKey           string
-	PayeePixKey      string
-	PayeePixKeyType  domain.PixKeyType
-	ExpiresIn        int // Segundos (para QR Code dinâmico)
-	AllowChange      bool // Permite alterar valor
-	Metadata         map[string]interface{}
-	AuthToken        string
-	ClientID         string
+	ExternalID      string
+	Amount          int64 // Centavos (0 para QR Code estático sem valor)
+	Description     string
+	PayeeName       string
+	PayeeDocument   string
+	PixKey          string
+	PayeePixKey     string
+	PayeePixKeyType domain.PixKeyType
+	ExpiresIn       int  // Segundos (para QR Code dinâmico)
+	AllowChange     bool // Permite alterar valor
+	Metadata        map[string]interface{}
+	AuthToken       string
+	ClientID        string
 }
 
 // QRCodeResponse representa a resposta de criação/consulta de QR Code
 type QRCodeResponse struct {
-	QRCodeID     string
-	QRCode       string // Código PIX copia e cola
-	QRCodeImage  string // Base64 da imagem
-	Amount       int64
-	Description  string
-	Status       string
-	ExpiresAt    *time.Time
-	CreatedAt    time.Time
-	RawResponse  map[string]interface{}
+	QRCodeID    string
+	QRCode      string // Código PIX copia e cola
+	QRCodeImage string // Base64 da imagem
+	Amount      int64
+	Description string
+	Status      string
+	ExpiresAt   *time.Time
+	CreatedAt   time.Time
+	RawResponse map[string]interface{}
 }
 
 // PixKeyInfo representa informações de uma chave PIX
@@ -320,7 +321,7 @@ func (r *ProviderManager) GetHealthyProvider(
 	preferredProvider string,
 ) (PixProvider, error) {
 	// TODO: Implementar lógica de seleção de provider baseada em saúde
-	return nil, nil
+	return nil, errors.New("provider selection not implemented yet")
 }
 
 // HTTPClient é um cliente HTTP para comunicação com providers
@@ -377,7 +378,7 @@ func (c *HTTPClient) Post(ctx context.Context, url string, payload interface{}, 
 
 // Get faz uma requisição GET
 func (c *HTTPClient) Get(ctx context.Context, url string, headers map[string]string) ([]byte, error) {
-	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", url, http.NoBody)
 	if err != nil {
 		return nil, err
 	}
@@ -405,7 +406,7 @@ func (c *HTTPClient) Get(ctx context.Context, url string, headers map[string]str
 }
 
 // PostForm faz uma requisição POST com form data
-func (c *HTTPClient) PostForm(ctx context.Context, urlStr string, data map[string]string, headers map[string]string) ([]byte, error) {
+func (c *HTTPClient) PostForm(ctx context.Context, urlStr string, data, headers map[string]string) ([]byte, error) {
 	form := url.Values{}
 	for key, value := range data {
 		form.Add(key, value)
@@ -440,7 +441,7 @@ func (c *HTTPClient) PostForm(ctx context.Context, urlStr string, data map[strin
 }
 
 // PostFormWithBasicAuth faz uma requisição POST com form data e Basic Auth
-func (c *HTTPClient) PostFormWithBasicAuth(ctx context.Context, urlStr string, data map[string]string, headers map[string]string, username, password string) ([]byte, error) {
+func (c *HTTPClient) PostFormWithBasicAuth(ctx context.Context, urlStr string, data, headers map[string]string, username, password string) ([]byte, error) {
 	form := url.Values{}
 	for key, value := range data {
 		form.Add(key, value)
