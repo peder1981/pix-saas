@@ -248,15 +248,15 @@ func (h *TransactionHandler) CreateTransfer(c *fiber.Ctx) error {
 	}
 
 	// Executar transferência com provider
-	transferResp, err := providerImpl.CreateTransfer(c.Context(), transferReq)
-	if err != nil {
+	transferResp, transferErr := providerImpl.CreateTransfer(c.Context(), transferReq)
+	if transferErr != nil {
 		// Atualizar transação como falha
 		tx.Status = domain.TransactionStatusFailed
-		if providerErr, ok := err.(*providers.ProviderError); ok {
+		if providerErr, ok := transferErr.(*providers.ProviderError); ok {
 			tx.ErrorCode = providerErr.Code
 			tx.ErrorMessage = providerErr.Message
 		} else {
-			tx.ErrorMessage = err.Error()
+			tx.ErrorMessage = transferErr.Error()
 		}
 		if err := h.txRepo.Update(c.Context(), tx); err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
@@ -264,11 +264,7 @@ func (h *TransactionHandler) CreateTransfer(c *fiber.Ctx) error {
 			})
 		}
 
-		if err := h.auditService.LogProviderOperation(c.Context(), *merchantID, tx.ID, selectedProvider.Code, "create_transfer", false, err.Error(), 0); err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-				"error": "failed to log provider operation",
-			})
-		}
+		_ = h.auditService.LogProviderOperation(c.Context(), *merchantID, tx.ID, selectedProvider.Code, "create_transfer", false, transferErr.Error(), 0)
 
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error":   "transfer failed",

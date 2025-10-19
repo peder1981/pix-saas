@@ -108,7 +108,7 @@ func (p *BradescoProvider) Authenticate(ctx context.Context, credentials provide
 			Details:   map[string]interface{}{"error": err.Error()},
 		}
 	}
-	defer func() { _ = resp.Body.Close() }()
+	defer func() { _ = resp.Body.Close() }() //nolint:errcheck
 
 	if resp.StatusCode != http.StatusOK {
 		body, err := io.ReadAll(resp.Body)
@@ -214,7 +214,7 @@ func (p *BradescoProvider) CreateTransfer(ctx context.Context, req *providers.Tr
 			Details:   map[string]interface{}{"error": err.Error()},
 		}
 	}
-	defer func() { _ = resp.Body.Close() }()
+	defer func() { _ = resp.Body.Close() }() //nolint:errcheck
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -285,7 +285,7 @@ func (p *BradescoProvider) GetTransfer(ctx context.Context, txID string) (*provi
 			Details:   map[string]interface{}{"error": err.Error()},
 		}
 	}
-	defer func() { _ = resp.Body.Close() }()
+	defer func() { _ = resp.Body.Close() }() //nolint:errcheck
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -356,7 +356,7 @@ func (p *BradescoProvider) HealthCheck(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	defer func() { _ = resp.Body.Close() }()
+	defer func() { _ = resp.Body.Close() }() //nolint:errcheck
 
 	if resp.StatusCode >= 500 {
 		return fmt.Errorf("provider unhealthy: status %d", resp.StatusCode)

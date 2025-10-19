@@ -109,7 +109,7 @@ func (p *ItauProvider) Authenticate(ctx context.Context, credentials providers.P
 			Details:   map[string]interface{}{"error": err.Error()},
 		}
 	}
-	defer func() { _ = resp.Body.Close() }()
+	defer func() { _ = resp.Body.Close() }() //nolint:errcheck
 
 	if resp.StatusCode != http.StatusOK {
 		body, err := io.ReadAll(resp.Body)
@@ -212,7 +212,7 @@ func (p *ItauProvider) CreateTransfer(ctx context.Context, req *providers.Transf
 			Details:   map[string]interface{}{"error": err.Error()},
 		}
 	}
-	defer func() { _ = resp.Body.Close() }()
+	defer func() { _ = resp.Body.Close() }() //nolint:errcheck
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -299,7 +299,7 @@ func (p *ItauProvider) GetTransfer(ctx context.Context, txID string) (*providers
 			Details:   map[string]interface{}{"error": err.Error()},
 		}
 	}
-	defer func() { _ = resp.Body.Close() }()
+	defer func() { _ = resp.Body.Close() }() //nolint:errcheck
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -382,7 +382,7 @@ func (p *ItauProvider) CreateQRCodeStatic(ctx context.Context, req *providers.QR
 			Details:   map[string]interface{}{"error": err.Error()},
 		}
 	}
-	defer func() { _ = resp.Body.Close() }()
+	defer func() { _ = resp.Body.Close() }() //nolint:errcheck
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -456,7 +456,7 @@ func (p *ItauProvider) CreateQRCodeDynamic(ctx context.Context, req *providers.Q
 			Details:   map[string]interface{}{"error": err.Error()},
 		}
 	}
-	defer func() { _ = resp.Body.Close() }()
+	defer func() { _ = resp.Body.Close() }() //nolint:errcheck
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -515,7 +515,7 @@ func (p *ItauProvider) GetQRCode(ctx context.Context, qrCodeID string) (*provide
 			Details:   map[string]interface{}{"error": err.Error()},
 		}
 	}
-	defer func() { _ = resp.Body.Close() }()
+	defer func() { _ = resp.Body.Close() }() //nolint:errcheck
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -568,7 +568,7 @@ func (p *ItauProvider) HealthCheck(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	defer func() { _ = resp.Body.Close() }()
+	defer func() { _ = resp.Body.Close() }() //nolint:errcheck
 
 	if resp.StatusCode >= 500 {
 		return fmt.Errorf("provider unhealthy: status %d", resp.StatusCode)
