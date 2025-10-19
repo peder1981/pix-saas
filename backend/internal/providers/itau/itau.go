@@ -85,7 +85,14 @@ func (p *ItauProvider) Authenticate(ctx context.Context, credentials providers.P
 		"scope":         "sispag",
 	}
 
-	jsonData, _ := json.Marshal(data)
+	jsonData, err := json.Marshal(data)
+	if err != nil {
+		return nil, &providers.ProviderError{
+			Code:    "MARSHAL_ERROR",
+			Message: "Erro ao serializar dados de autenticação",
+			Details: map[string]interface{}{"error": err.Error()},
+		}
+	}
 	req, err := http.NewRequestWithContext(ctx, "POST", p.authURL, bytes.NewBuffer(jsonData))
 	if err != nil {
 		return nil, err
@@ -105,7 +112,10 @@ func (p *ItauProvider) Authenticate(ctx context.Context, credentials providers.P
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			body = []byte("failed to read response body")
+		}
 		return nil, &providers.ProviderError{
 			Code:       "AUTH_FAILED",
 			Message:    "Autenticação falhou",
@@ -177,7 +187,14 @@ func (p *ItauProvider) CreateTransfer(ctx context.Context, req *providers.Transf
 		payload["cpf_cnpj_recebedor"] = req.PayeeDocument
 	}
 
-	jsonData, _ := json.Marshal(payload)
+	jsonData, err := json.Marshal(payload)
+	if err != nil {
+		return nil, &providers.ProviderError{
+			Code:    "MARSHAL_ERROR",
+			Message: "Erro ao serializar payload de transferência",
+			Details: map[string]interface{}{"error": err.Error()},
+		}
+	}
 	httpReq, err := http.NewRequestWithContext(ctx, "POST", endpoint, bytes.NewBuffer(jsonData))
 	if err != nil {
 		return nil, err
@@ -197,7 +214,10 @@ func (p *ItauProvider) CreateTransfer(ctx context.Context, req *providers.Transf
 	}
 	defer resp.Body.Close()
 
-	body, _ := io.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		body = []byte("failed to read response body")
+	}
 
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
 		var errorResp struct {
@@ -277,7 +297,10 @@ func (p *ItauProvider) GetTransfer(ctx context.Context, txID string) (*providers
 	}
 	defer resp.Body.Close()
 
-	body, _ := io.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		body = []byte("failed to read response body")
+	}
 
 	if resp.StatusCode == http.StatusNotFound {
 		return nil, &providers.ProviderError{
@@ -331,7 +354,14 @@ func (p *ItauProvider) CreateQRCodeStatic(ctx context.Context, req *providers.QR
 		"descricao": req.Description,
 	}
 
-	jsonData, _ := json.Marshal(payload)
+	jsonData, err := json.Marshal(payload)
+	if err != nil {
+		return nil, &providers.ProviderError{
+			Code:    "MARSHAL_ERROR",
+			Message: "Erro ao serializar payload de QR Code",
+			Details: map[string]interface{}{"error": err.Error()},
+		}
+	}
 	httpReq, err := http.NewRequestWithContext(ctx, "POST", endpoint, bytes.NewBuffer(jsonData))
 	if err != nil {
 		return nil, err
@@ -350,7 +380,10 @@ func (p *ItauProvider) CreateQRCodeStatic(ctx context.Context, req *providers.QR
 	}
 	defer resp.Body.Close()
 
-	body, _ := io.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		body = []byte("failed to read response body")
+	}
 
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
 		return nil, &providers.ProviderError{
@@ -395,7 +428,14 @@ func (p *ItauProvider) CreateQRCodeDynamic(ctx context.Context, req *providers.Q
 		"permite_alterar": req.AllowChange,
 	}
 
-	jsonData, _ := json.Marshal(payload)
+	jsonData, err := json.Marshal(payload)
+	if err != nil {
+		return nil, &providers.ProviderError{
+			Code:    "MARSHAL_ERROR",
+			Message: "Erro ao serializar payload de QR Code dinâmico",
+			Details: map[string]interface{}{"error": err.Error()},
+		}
+	}
 	httpReq, err := http.NewRequestWithContext(ctx, "POST", endpoint, bytes.NewBuffer(jsonData))
 	if err != nil {
 		return nil, err
@@ -414,7 +454,10 @@ func (p *ItauProvider) CreateQRCodeDynamic(ctx context.Context, req *providers.Q
 	}
 	defer resp.Body.Close()
 
-	body, _ := io.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		body = []byte("failed to read response body")
+	}
 
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
 		return nil, &providers.ProviderError{
@@ -470,7 +513,10 @@ func (p *ItauProvider) GetQRCode(ctx context.Context, qrCodeID string) (*provide
 	}
 	defer resp.Body.Close()
 
-	body, _ := io.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		body = []byte("failed to read response body")
+	}
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, &providers.ProviderError{
