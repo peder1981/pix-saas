@@ -271,7 +271,7 @@ func (p *BradescoProvider) GetTransfer(ctx context.Context, txID string) (*provi
 	// Endpoint: GET /v1/spi/consultar-transferencia/{idTransacao}
 	endpoint := fmt.Sprintf("%s/v1/spi/consultar-transferencia/%s", p.baseURL, txID)
 
-	req, err := http.NewRequestWithContext(ctx, "GET", endpoint, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", endpoint, http.NoBody)
 	if err != nil {
 		return nil, err
 	}
