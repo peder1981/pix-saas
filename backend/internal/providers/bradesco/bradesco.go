@@ -347,7 +347,7 @@ func (p *BradescoProvider) ValidatePixKey(ctx context.Context, pixKey string, pi
 
 func (p *BradescoProvider) HealthCheck(ctx context.Context) error {
 	// Fazer uma requisição simples para verificar conectividade
-	req, err := http.NewRequestWithContext(ctx, "GET", p.baseURL, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", p.baseURL, http.NoBody)
 	if err != nil {
 		return err
 	}
