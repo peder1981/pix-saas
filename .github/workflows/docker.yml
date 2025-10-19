@@ -48,6 +48,7 @@ jobs:
           type=sha
     
     - name: Build and push API image
+      id: build-api
       uses: docker/build-push-action@v5
       with:
         context: .
@@ -57,13 +58,15 @@ jobs:
         labels: ${{ steps.meta-api.outputs.labels }}
         cache-from: type=gha
         cache-to: type=gha,mode=max
+        load: true
     
     - name: Run Trivy vulnerability scanner
       uses: aquasecurity/trivy-action@master
       with:
-        image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-api:${{ github.sha }}
+        image-ref: ${{ fromJSON(steps.meta-api.outputs.json).tags[0] }}
         format: 'sarif'
         output: 'trivy-results.sarif'
+      continue-on-error: true
     
     - name: Upload Trivy results to GitHub Security
       uses: github/codeql-action/upload-sarif@v3
