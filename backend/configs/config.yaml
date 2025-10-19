@@ -1,0 +1,82 @@
+server:
+  port: 8080
+  environment: development
+  allowed_origins:
+    - "*"
+  rate_limit_rps: 100
+  read_timeout: 30s
+  write_timeout: 30s
+  shutdown_timeout: 10s
+
+database:
+  host: localhost
+  port: 5432
+  user: postgres
+  password: postgres
+  database: pixsaas
+  sslmode: disable
+  max_open_conns: 25
+  max_idle_conns: 5
+  conn_max_lifetime: 5m
+
+jwt:
+  secret_key: ${JWT_SECRET_KEY}
+  access_token_ttl: 15m
+  refresh_token_ttl: 168h # 7 days
+
+encryption:
+  key: ${ENCRYPTION_KEY} # Base64 encoded 32-byte key
+
+audit:
+  enabled: true
+  retention_years: 5
+  async_logging: true
+
+providers:
+  bradesco:
+    base_url: https://qrpix.bradesco.com.br
+    auth_url: https://qrpix.bradesco.com.br/oauth/token
+    sandbox_url: https://openapisandbox.prebanco.com.br
+    timeout: 30
+    max_retries: 3
+    requires_mtls: true
+  
+  itau:
+    base_url: https://api.itau.com.br
+    auth_url: https://sts.itau.com.br/api/oauth/token
+    sandbox_url: https://api.itau.com.br/sandbox
+    timeout: 30
+    max_retries: 3
+    requires_mtls: true
+  
+  banco_do_brasil:
+    base_url: https://api.bb.com.br/pix-bb/v1
+    auth_url: https://oauth.bb.com.br/oauth/token
+    sandbox_url: https://api.sandbox.bb.com.br/pix-bb/v1
+    timeout: 30
+    max_retries: 3
+    requires_mtls: true
+  
+  santander:
+    base_url: https://trust-open.api.santander.com.br
+    auth_url: https://trust-open.api.santander.com.br/auth/oauth/v2/token
+    sandbox_url: https://trust-open.api.santander.com.br/sandbox
+    timeout: 30
+    max_retries: 3
+    requires_mtls: true
+  
+  inter:
+    base_url: https://cdpj.partners.bancointer.com.br
+    auth_url: https://cdpj.partners.bancointer.com.br/oauth/v2/token
+    sandbox_url: https://cdpj-sandbox.partners.bancointer.com.br
+    timeout: 30
+    max_retries: 3
+    requires_mtls: false
+  
+  sicoob:
+    base_url: https://api.sicoob.com.br
+    auth_url: https://api.sicoob.com.br/oauth/token
+    sandbox_url: https://api-sandbox.sicoob.com.br
+    timeout: 30
+    max_retries: 3
+    requires_mtls: true
