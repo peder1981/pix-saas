@@ -68,7 +68,7 @@ func (s *AuditService) Log(ctx context.Context, entry *LogEntry) error {
 			// Tentar serializar e deserializar
 			jsonData, _ := json.Marshal(entry.RequestBody)
 			var reqMap map[string]interface{}
-			json.Unmarshal(jsonData, &reqMap)
+			_ = json.Unmarshal(jsonData, &reqMap)
 			auditLog.RequestBody = reqMap
 		}
 	}
@@ -80,7 +80,7 @@ func (s *AuditService) Log(ctx context.Context, entry *LogEntry) error {
 		} else {
 			jsonData, _ := json.Marshal(entry.ResponseBody)
 			var respMap map[string]interface{}
-			json.Unmarshal(jsonData, &respMap)
+			_ = json.Unmarshal(jsonData, &respMap)
 			auditLog.ResponseBody = respMap
 		}
 	}
