@@ -1,0 +1,461 @@
+openapi: 3.0.3
+info:
+  title: PIX SaaS API
+  description: |
+    API completa para pagamentos PIX com suporte a múltiplas instituições financeiras brasileiras.
+    
+    ## Características
+    - Multi-tenant com isolamento completo
+    - Suporte a 18+ instituições financeiras
+    - Segurança PCI DSS compliant
+    - Auditoria completa com retenção de 5 anos
+    - Webhooks com retry automático
+    
+    ## Autenticação
+    A API utiliza JWT (JSON Web Tokens) para autenticação. Para obter um token:
+    1. Faça login com suas credenciais em `/v1/auth/login`
+    2. Use o `access_token` retornado no header `Authorization: Bearer {token}`
+    3. Quando o token expirar, use o `refresh_token` em `/v1/auth/refresh`
+    
+  version: 1.0.0
+  contact:
+    name: PIX SaaS Support
+    email: suporte@pixsaas.com.br
+  license:
+    name: Proprietary
+
+servers:
+  - url: https://api.pixsaas.com.br/v1
+    description: Produção
+  - url: https://sandbox.pixsaas.com.br/v1
+    description: Sandbox
+  - url: http://localhost:8080/v1
+    description: Desenvolvimento
+
+tags:
+  - name: Authentication
+    description: Autenticação e autorização
+  - name: Transactions
+    description: Operações de transações PIX
+  - name: QR Codes
+    description: Geração e consulta de QR Codes
+  - name: Webhooks
+    description: Configuração de webhooks
+  - name: Merchants
+    description: Gerenciamento de merchants (admin)
+
+paths:
+  /auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: Login
+      description: Autentica um usuário e retorna tokens JWT
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: merchant@example.com
+                password:
+                  type: string
+                  format: password
+                  example: SecurePassword123!
+      responses:
+        '200':
+          description: Login bem-sucedido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /auth/refresh:
+    post:
+      tags:
+        - Authentication
+      summary: Refresh Token
+      description: Renova o access token usando um refresh token válido
+      operationId: refreshToken
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - refresh_token
+              properties:
+                refresh_token:
+                  type: string
+                  example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+      responses:
+        '200':
+          description: Token renovado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /auth/me:
+    get:
+      tags:
+        - Authentication
+      summary: Informações do Usuário
+      description: Retorna informações do usuário autenticado
+      operationId: getCurrentUser
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Informações do usuário
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserInfo'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /transactions/transfer:
+    post:
+      tags:
+        - Transactions
+      summary: Criar Transferência PIX
+      description: Cria uma nova transferência PIX
+      operationId: createTransfer
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTransferRequest'
+      responses:
+        '201':
+          description: Transferência criada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          description: External ID já existe
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /transactions/{id}:
+    get:
+      tags:
+        - Transactions
+      summary: Consultar Transação
+      description: Busca uma transação por ID
+      operationId: getTransaction
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          example: 123e4567-e89b-12d3-a456-426614174000
+      responses:
+        '200':
+          description: Transação encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /transactions:
+    get:
+      tags:
+        - Transactions
+      summary: Listar Transações
+      description: Lista todas as transações do merchant com paginação e filtros
+      operationId: listTransactions
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+            minimum: 1
+            maximum: 100
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, processing, completed, failed, cancelled]
+        - name: start_date
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: end_date
+          in: query
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: Lista de transações
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/TransactionResponse'
+                  total:
+                    type: integer
+                    example: 150
+                  limit:
+                    type: integer
+                    example: 50
+                  offset:
+                    type: integer
+                    example: 0
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    LoginResponse:
+      type: object
+      properties:
+        access_token:
+          type: string
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        refresh_token:
+          type: string
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        token_type:
+          type: string
+          example: Bearer
+        expires_in:
+          type: integer
+          example: 900
+          description: Tempo de expiração em segundos
+        expires_at:
+          type: string
+          format: date-time
+          example: 2024-01-20T15:30:00Z
+        user:
+          $ref: '#/components/schemas/UserInfo'
+
+    UserInfo:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: 123e4567-e89b-12d3-a456-426614174000
+        email:
+          type: string
+          format: email
+          example: merchant@example.com
+        name:
+          type: string
+          example: João Silva
+        role:
+          type: string
+          enum: [admin, merchant, developer]
+          example: merchant
+        merchant_id:
+          type: string
+          format: uuid
+          example: 123e4567-e89b-12d3-a456-426614174001
+
+    CreateTransferRequest:
+      type: object
+      required:
+        - external_id
+        - amount
+        - payee_name
+        - payee_document
+      properties:
+        external_id:
+          type: string
+          description: ID único da transação no sistema do merchant
+          example: ORDER-12345
+        amount:
+          type: integer
+          description: Valor em centavos
+          example: 10000
+          minimum: 1
+        description:
+          type: string
+          description: Descrição da transação
+          example: Pagamento pedido #12345
+          maxLength: 140
+        provider_code:
+          type: string
+          description: Código do provider (opcional, será selecionado automaticamente se não informado)
+          example: bradesco
+          enum: [bradesco, itau, banco_do_brasil, santander, inter, sicoob]
+        payee_name:
+          type: string
+          description: Nome do recebedor
+          example: Maria Santos
+        payee_document:
+          type: string
+          description: CPF ou CNPJ do recebedor
+          example: 12345678901
+        payee_pix_key:
+          type: string
+          description: Chave PIX do recebedor (se usar chave)
+          example: maria@example.com
+        payee_pix_key_type:
+          type: string
+          enum: [cpf, cnpj, email, phone, random, account]
+          example: email
+        payee_account:
+          type: object
+          description: Dados bancários do recebedor (se não usar chave PIX)
+          properties:
+            bank:
+              type: string
+              example: Banco do Brasil
+            ispb:
+              type: string
+              example: "00000000"
+            agency:
+              type: string
+              example: "1234"
+            number:
+              type: string
+              example: "567890"
+            type:
+              type: string
+              enum: [checking, savings]
+              example: checking
+        metadata:
+          type: object
+          description: Metadados adicionais
+          additionalProperties: true
+          example:
+            order_id: "12345"
+            customer_id: "67890"
+
+    TransactionResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: 123e4567-e89b-12d3-a456-426614174000
+        external_id:
+          type: string
+          example: ORDER-12345
+        e2e_id:
+          type: string
+          description: End-to-End ID do PIX
+          example: E1234567820240120123456789012345
+        status:
+          type: string
+          enum: [pending, processing, completed, failed, cancelled]
+          example: completed
+        amount:
+          type: integer
+          description: Valor em centavos
+          example: 10000
+        description:
+          type: string
+          example: Pagamento pedido #12345
+        provider:
+          type: string
+          example: bradesco
+        created_at:
+          type: string
+          format: date-time
+          example: 2024-01-20T10:00:00Z
+        updated_at:
+          type: string
+          format: date-time
+          example: 2024-01-20T10:00:05Z
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          example: Invalid request
+        code:
+          type: integer
+          example: 400
+        details:
+          type: string
+          example: Field 'amount' is required
+
+  responses:
+    BadRequest:
+      description: Requisição inválida
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    
+    Unauthorized:
+      description: Não autorizado
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: Unauthorized
+            code: 401
+    
+    NotFound:
+      description: Recurso não encontrado
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: Not found
+            code: 404
+
+security:
+  - BearerAuth: []

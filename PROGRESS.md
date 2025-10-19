@@ -61,7 +61,7 @@
 - ✅ Suporte a variáveis de ambiente
 - ✅ Defaults sensatos
 
-## 🔄 Fase 2: Autenticação e Segurança (EM PROGRESSO)
+## ✅ Fase 2: Autenticação e Segurança (CONCLUÍDA)
 
 ### Middlewares
 - ✅ AuthMiddleware (JWT validation)
@@ -73,37 +73,77 @@
 - ✅ SecurityHeaders (Helmet)
 - ✅ CORS
 - ✅ Recover
-- ⏳ IPWhitelist (TODO)
+- ⏳ IPWhitelist (TODO - baixa prioridade)
 
 ### Handlers
-- ✅ AuthHandler:
+- ✅ AuthHandler completo:
   - Login
   - RefreshToken
   - Logout
   - Me
-- ⏳ TransactionHandler (TODO)
-- ⏳ MerchantHandler (TODO)
-- ⏳ WebhookHandler (TODO)
+- ✅ TransactionHandler completo:
+  - CreateTransfer
+  - GetTransaction
+  - ListTransactions
+
+### Infraestrutura
+- ✅ main.go da API completo
+- ✅ Graceful shutdown
+- ✅ Health check endpoint
+- ✅ Error handling customizado
+
+## ✅ Fase 3: APIs PIX Normalizadas (CONCLUÍDA)
+
+### Endpoints Implementados
+- ✅ POST /v1/auth/login
+- ✅ POST /v1/auth/refresh
+- ✅ GET /v1/auth/me
+- ✅ POST /v1/transactions/transfer
+- ✅ GET /v1/transactions/:id
+- ✅ GET /v1/transactions (com paginação e filtros)
+- ✅ GET /health
+
+### Documentação
+- ✅ OpenAPI 3.0 completa (openapi.yaml)
+- ✅ Exemplos de requisições
+- ✅ Schemas detalhados
+- ✅ Códigos de erro documentados
+
+### DevOps
+- ✅ Docker Compose completo
+- ✅ Dockerfile.api otimizado (multi-stage)
+- ✅ Makefile com comandos úteis
+- ✅ .env.example
+- ✅ .gitignore configurado
+
+## 🔄 Fase 5: CLI de Administração (EM PROGRESSO)
+
+### Comandos Implementados
+- ✅ provider add - Adicionar provider
+- ✅ provider list - Listar providers
+- ✅ provider delete - Remover provider
+- ✅ merchant list - Listar merchants
+- ✅ keys generate - Gerar chave de criptografia
+
+### Comandos Pendentes
+- ⏳ merchant create
+- ⏳ merchant configure-provider
+- ⏳ provider test
+- ⏳ credentials set
 
 ## 📋 Próximos Passos
 
-### Fase 2 (Continuar)
-- [ ] UserRepository completo
-- [ ] TransactionHandler completo
-- [ ] MerchantHandler
-- [ ] WebhookHandler
-- [ ] Validação de inputs
-- [ ] Error handling padronizado
-
-### Fase 3: APIs PIX Normalizadas
-- [ ] POST /v1/transactions/transfer
-- [ ] GET /v1/transactions/:id
-- [ ] POST /v1/transactions/qrcode/static
-- [ ] POST /v1/transactions/qrcode/dynamic
-- [ ] GET /v1/transactions/qrcode/:id
-- [ ] POST /v1/webhooks
-- [ ] GET /v1/webhooks
-- [ ] Documentação OpenAPI/Swagger
+### Fase 4: Integração com Bancos
+- [ ] Implementar Banco do Brasil provider
+- [ ] Implementar Santander provider
+- [ ] Implementar Inter provider
+- [ ] Implementar Sicoob provider
+- [ ] QR Code estático/dinâmico (Bradesco)
+- [ ] QR Code estático/dinâmico (Itaú) ✅
+- [ ] Sistema de fallback
+- [ ] Health checks automáticos
+- [ ] Retry com backoff exponencial
+- [ ] Cache de tokens OAuth
 
 ### Fase 4: Integração com Bancos
 - [ ] Implementar Banco do Brasil provider
